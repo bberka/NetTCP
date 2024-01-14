@@ -2,15 +2,15 @@
 
 public class ServerErrorEventArgs
 {
-  public ServerErrorEventArgs(EasTcpServer server, Exception exception) {
+  public ServerErrorEventArgs(NetTcpServer server, Exception exception) {
     Server = server;
     Exception = exception;
   }
 
-  public EasTcpServer Server { get; }
+  public NetTcpServer Server { get; }
   public Exception Exception { get; }
   
-  public static ServerErrorEventArgs Create(EasTcpServer server, Exception exception) {
+  public static ServerErrorEventArgs Create(NetTcpServer server, Exception exception) {
     return new(server, exception);
   }
 }

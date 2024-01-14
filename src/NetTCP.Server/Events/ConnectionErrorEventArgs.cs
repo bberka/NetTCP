@@ -2,15 +2,15 @@
 
 public class ConnectionErrorEventArgs
 {
-  public ConnectionErrorEventArgs(EasTcpConnection connection, Exception exception) {
+  public ConnectionErrorEventArgs(NetTcpConnection connection, Exception exception) {
     Connection = connection;
     Exception = exception;
   }
 
-  public EasTcpConnection Connection { get; }
+  public NetTcpConnection Connection { get; }
   public Exception Exception { get; }
   
-  public static ConnectionErrorEventArgs Create(EasTcpConnection connection, Exception exception) {
+  public static ConnectionErrorEventArgs Create(NetTcpConnection connection, Exception exception) {
     return new(connection, exception);
   }
 }

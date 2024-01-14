@@ -6,7 +6,7 @@ using NetTCP.Serialization;
 
 namespace NetTCP.Client;
 
-public class EasTcpClient
+public class NetTcpClient
 {
 
   public System.Net.Sockets.TcpClient Client { get; set; }
@@ -60,7 +60,7 @@ public class EasTcpClient
 
   
 
-  public EasTcpClient(string host, ushort port) {
+  public NetTcpClient(string host, ushort port) {
     Client = new System.Net.Sockets.TcpClient(host, port);
     ClientCancellationTokenSource = new CancellationTokenSource();
     _outgoingPacketQueue = new ConcurrentQueue<ProcessedClientPacket>();

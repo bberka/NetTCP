@@ -2,13 +2,13 @@
 
 public class ClientDisconnectedEventArgs
 {
-  public ClientDisconnectedEventArgs(EasTcpConnection connection) {
+  public ClientDisconnectedEventArgs(NetTcpConnection connection) {
     Connection = connection;
   }
 
-  public EasTcpConnection Connection { get; }
+  public NetTcpConnection Connection { get; }
   
-  public static ClientDisconnectedEventArgs Create(EasTcpConnection connection) {
+  public static ClientDisconnectedEventArgs Create(NetTcpConnection connection) {
     return new(connection);
   }
   

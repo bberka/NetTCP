@@ -14,7 +14,7 @@ ClientPacketTable.This.Register(new[] {
 });
 
 Thread.Sleep(3000);
-var client = new EasTcpClient("127.0.0.1", 8080);
+var client = new NetTcpClient("127.0.0.1", 8080);
 client.Connect();
 
 //BLOCK THREAD

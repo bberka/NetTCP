@@ -14,7 +14,7 @@ ServerPacketTable.This.Register(new[] {
 });
 
 
-var server = new EasTcpServer("127.0.0.1", 8080);
+var server = new NetTcpServer("127.0.0.1", 8080);
 
 server.ServerStarted += (sender, args) => { Console.WriteLine("Server started"); };
 

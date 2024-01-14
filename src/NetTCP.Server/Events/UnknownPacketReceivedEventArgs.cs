@@ -2,7 +2,7 @@
 
 public class UnknownPacketReceivedEventArgs
 {
-  public UnknownPacketReceivedEventArgs(EasTcpConnection connection, int messageId, bool encrypted, int size,byte[] packet) {
+  public UnknownPacketReceivedEventArgs(NetTcpConnection connection, int messageId, bool encrypted, int size,byte[] packet) {
     Connection = connection;
     MessageId = messageId;
     Encrypted = encrypted;
@@ -10,7 +10,7 @@ public class UnknownPacketReceivedEventArgs
     Packet = packet;
   }
 
-  public EasTcpConnection Connection { get; }
+  public NetTcpConnection Connection { get; }
   public int MessageId { get; }
   public bool Encrypted { get; }
   public int Size { get; }

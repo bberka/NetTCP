@@ -6,14 +6,14 @@ using NetTCP.Server.Events;
 
 namespace NetTCP.Server;
 
-public class EasTcpServer
+public class NetTcpServer
 {
   protected IPAddress ListenIpAddress { get; }
   protected ushort Port { get; }
   protected TcpListener Listener { get; }
   public int ConnectionTimeout { get; protected set; }
   protected CancellationTokenSource ServerCancellationTokenSource { get; }
-  public ConcurrentBag<EasTcpConnection> Connections { get; }
+  public ConcurrentBag<NetTcpConnection> Connections { get; }
 
   public bool CanProcess => Listener.Server.IsBound && !ServerCancellationTokenSource.IsCancellationRequested;
 
@@ -28,13 +28,13 @@ public class EasTcpServer
   public event EventHandler<MessageHandlerNotFoundEventArgs> MessageHandlerNotFound;
   public event EventHandler<PacketQueuedEventArgs> PacketQueued;
   public event EventHandler<PacketReceivedEventArgs> PacketReceived;
-  public EasTcpServer(string listenAddress, ushort port) {
+  public NetTcpServer(string listenAddress, ushort port) {
     ListenIpAddress = IPAddress.Parse(listenAddress);
     Port = port;
     //TODO SET SOCKET OPTION
     Listener = new TcpListener(ListenIpAddress, port);
     ServerCancellationTokenSource = new CancellationTokenSource();
-    Connections = new ConcurrentBag<EasTcpConnection>();
+    Connections = new ConcurrentBag<NetTcpConnection>();
     _ = Task.Run(HandleConnectionTimeouts,
                  ServerCancellationTokenSource.Token);
   }
@@ -43,7 +43,7 @@ public class EasTcpServer
     const int timeoutTaskDelay = 10;
     while (true) {
       await Task.Delay(TimeSpan.FromSeconds(timeoutTaskDelay)).ConfigureAwait(false);
-      var tempConnections = new List<EasTcpConnection>(Connections.Count);
+      var tempConnections = new List<NetTcpConnection>(Connections.Count);
       while (Connections.TryTake(out var connection)) tempConnections.Add(connection);
       foreach (var tcpConnection in tempConnections) {
         if (tcpConnection.LastActivity + ConnectionTimeout < Environment.TickCount64)
@@ -58,7 +58,7 @@ public class EasTcpServer
     var connectionHandlerTask = Task.Run(async () => {
                                            while (true) {
                                              var client = await Listener.AcceptTcpClientAsync().ConfigureAwait(false);
-                                             var connection = new EasTcpConnection(client, ServerCancellationTokenSource.Token);
+                                             var connection = new NetTcpConnection(client, ServerCancellationTokenSource.Token);
                                              connection.SubscribeToEvents(this);
                                              ClientConnected?.Invoke(this, new ClientConnectedEventArgs(connection));
                                              Connections.Add(connection);

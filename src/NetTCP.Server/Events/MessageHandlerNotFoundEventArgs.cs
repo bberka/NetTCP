@@ -4,10 +4,10 @@ namespace NetTCP.Server.Events;
 
 public class MessageHandlerNotFoundEventArgs
 {
-  public EasTcpConnection Connection { get; }
+  public NetTcpConnection Connection { get; }
   public ProcessedClientPacket Packet { get; }
 
-  public MessageHandlerNotFoundEventArgs(EasTcpConnection connection, ProcessedClientPacket packet) {
+  public MessageHandlerNotFoundEventArgs(NetTcpConnection connection, ProcessedClientPacket packet) {
     Connection = connection;
     Packet = packet;
   }

@@ -2,11 +2,11 @@
 
 public class ServerStartedEventArgs
 {
-  public ServerStartedEventArgs(EasTcpServer server) {
+  public ServerStartedEventArgs(NetTcpServer server) {
     Server = server;
   }
 
-  public EasTcpServer Server { get; }
+  public NetTcpServer Server { get; }
   
   
 }

@@ -7,7 +7,7 @@ using NetTCP.Attributes;
 
 namespace NetTCP.Client;
 
-public delegate void MessageHandlerDelegate(EasTcpClient session, IPacketReadable message);
+public delegate void MessageHandlerDelegate(NetTcpClient session, IPacketReadable message);
 
 public class ClientPacketTable
 {
@@ -83,7 +83,7 @@ public class ClientPacketTable
         if (attribute == null)
           continue;
 
-        var sessionParameter = Expression.Parameter(typeof(EasTcpClient));
+        var sessionParameter = Expression.Parameter(typeof(NetTcpClient));
         var messageParameter = Expression.Parameter(typeof(IPacketReadable));
 
         var parameterInfo = method.GetParameters();
@@ -92,7 +92,7 @@ public class ClientPacketTable
           #region Debug
 
           Debug.Assert(parameterInfo.Length == 2);
-          Debug.Assert(typeof(EasTcpClient).IsAssignableFrom(parameterInfo[0].ParameterType));
+          Debug.Assert(typeof(NetTcpClient).IsAssignableFrom(parameterInfo[0].ParameterType));
           Debug.Assert(typeof(IPacketReadable).IsAssignableFrom(parameterInfo[1].ParameterType));
 
           #endregion
@@ -110,7 +110,7 @@ public class ClientPacketTable
           #region Debug
 
           Debug.Assert(parameterInfo.Length == 1);
-          Debug.Assert(typeof(EasTcpClient).IsAssignableFrom(type));
+          Debug.Assert(typeof(NetTcpClient).IsAssignableFrom(type));
           Debug.Assert(typeof(IPacketReadable).IsAssignableFrom(parameterInfo[0].ParameterType));
 
           #endregion

@@ -11,7 +11,7 @@ namespace NetTCP.Example.Client.Network.Message.Handler;
 public class PongHandler : IPacketHandler
 {
   [PacketHandler(OpCodes.SMPong)]
-  public static void HandlePing(EasTcpClient client, SMPong request) {
+  public static void HandlePing(NetTcpClient client, SMPong request) {
     client.EnqueuePacketSend(new CMPing() {
       Timestamp = request.Timestamp
     });

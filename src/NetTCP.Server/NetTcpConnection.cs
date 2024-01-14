@@ -9,7 +9,7 @@ using NetTCP.Server.Model;
 
 namespace NetTCP.Server;
 
-public sealed class EasTcpConnection : IDisposable
+public sealed class NetTcpConnection : IDisposable
 {
   private PacketReader _packetReader;
   private PacketWriter _packetWriter;
@@ -66,7 +66,7 @@ public sealed class EasTcpConnection : IDisposable
 
 
 
-  public EasTcpConnection(TcpClient client, CancellationToken serverCancellationToken) {
+  public NetTcpConnection(TcpClient client, CancellationToken serverCancellationToken) {
     Client = client;
     ServerCancellationToken = serverCancellationToken;
     ClientCancellationTokenSource = new CancellationTokenSource();
@@ -89,7 +89,7 @@ public sealed class EasTcpConnection : IDisposable
   private event EventHandler<PacketQueuedEventArgs> PacketQueued;
   private event EventHandler<PacketReceivedEventArgs> PacketReceived;
   
-  protected internal void SubscribeToEvents(EasTcpServer server) {
+  protected internal void SubscribeToEvents(NetTcpServer server) {
     server.ConnectionError += ConnectionError;
     server.ClientDisconnected += ClientDisconnected;
     server.UnknownPacketReceived += UnknownPacketReceived;

@@ -10,7 +10,7 @@ namespace NetTCP.Example.Server.Network.Message.Handler;
 public class PingHandler : IPacketHandler
 {
   [PacketHandler(OpCodes.CMPing)]
-  public static void HandlePing(EasTcpConnection connection, CMPing request) {
+  public static void HandlePing(NetTcpConnection connection, CMPing request) {
     connection.EnqueuePacketSend(new SMPong() {
       Timestamp = request.Timestamp
     });

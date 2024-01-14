@@ -2,13 +2,13 @@
 
 public class PacketReceivedEventArgs
 {
-  public PacketReceivedEventArgs(EasTcpConnection connection, int messageId, bool encrypted) {
+  public PacketReceivedEventArgs(NetTcpConnection connection, int messageId, bool encrypted) {
     Connection = connection;
     MessageId = messageId;
     Encrypted = encrypted;
   }
 
-  public EasTcpConnection Connection { get; }
+  public NetTcpConnection Connection { get; }
   public int MessageId { get; }
   public bool Encrypted { get; }
 }
