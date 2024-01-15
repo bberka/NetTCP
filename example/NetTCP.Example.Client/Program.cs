@@ -1,26 +1,24 @@
 ﻿using System.Net.NetworkInformation;
 using System.Reflection;
 using NetTCP.Client;
+using NetTCP.Example.Server.Network.Message.Client;
 using NetTCP.Example.Shared;
-using NetTCP.Example.Shared.Network.Packets.Client;
+using NetTCP.Example.Shared.Network.Message.Client;
+
+
+var builder = NetTcpClientBuilder.Create();
 
 
 
-var entry = Assembly.GetEntryAssembly();
-var shared = typeof(OpCodes).Assembly;
-NetTcpClientPacketContainer.This.Register(new[] {
-  entry,
-  shared
-});
+var client = builder.Build("127.0.0.1", 8080);
+ 
+//REGISTER EVENTS
 
-Thread.Sleep(3000);
-var client = new NetTcpClient("127.0.0.1", 8080);
 client.Connect();
 
-//BLOCK THREAD
 while (client.CanProcess) {
   Thread.Sleep(5000);
-  client.EnqueuePacketSend(new CMPing() {
+  client.EnqueuePacketSend(new CmPing() {
     Timestamp = 123123
   });
 }

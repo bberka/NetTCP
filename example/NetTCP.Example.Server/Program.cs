@@ -5,14 +5,14 @@ using System.Reflection;
 using NetTCP.Attributes;
 using NetTCP.Example.Server.Abstract;
 using NetTCP.Example.Server.Concrete;
+using NetTCP.Example.Server.Network.Message.Handler;
 using NetTCP.Example.Shared;
-using NetTCP.Example.Shared.Network.Packets.Server;
 using NetTCP.Server;
 
 
 
 var builder = NetTcpServerBuilder.Create();
-builder.RegisterPacketsFromAssembly(typeof(OpCodes).Assembly);
+builder.RegisterPacketsFromAssembly(typeof(PingHandler).Assembly);
 
 builder.RegisterSingleton<IServerInfoMgr,ServerInfoMgr>();
 

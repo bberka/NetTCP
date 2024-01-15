@@ -9,7 +9,7 @@ namespace NetTCP.Server;
 
 public class NetTcpServer
 {
-  protected readonly NetServerPacketContainer PacketContainer;
+  protected readonly NetTcpServerPacketContainer PacketContainer;
   protected IPAddress ListenIpAddress { get; }
   protected ushort Port { get; }
   protected TcpListener Listener { get; }
@@ -35,7 +35,7 @@ public class NetTcpServer
   public event EventHandler<PacketQueuedEventArgs> PacketQueued;
   public event EventHandler<PacketReceivedEventArgs> PacketReceived;
 
-  internal NetTcpServer(IPAddress ipAddress, ushort port, NetServerPacketContainer packetContainer) {
+  internal NetTcpServer(IPAddress ipAddress, ushort port, NetTcpServerPacketContainer packetContainer) {
     PacketContainer = packetContainer;
     ListenIpAddress = ipAddress;
     Port = port;

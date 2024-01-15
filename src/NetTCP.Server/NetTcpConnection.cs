@@ -11,7 +11,7 @@ namespace NetTCP.Server;
 
 public sealed class NetTcpConnection : IDisposable
 {
-  private readonly NetServerPacketContainer _packetContainer;
+  private readonly NetTcpServerPacketContainer _packetContainer;
   private PacketReader _packetReader;
   private PacketWriter _packetWriter;
   protected TcpClient Client { get; }
@@ -23,8 +23,7 @@ public sealed class NetTcpConnection : IDisposable
 
   public bool CanProcess => Client.Connected && !ClientCancellationTokenSource.IsCancellationRequested;
 
-  public bool AnyProcessingPackets => !_incomingPacketQueue.IsEmpty || _outgoingPacketQueue.IsEmpty;
-
+  public bool AnyPacketsProcessing => !(_incomingPacketQueue.IsEmpty && _outgoingPacketQueue.IsEmpty);
 
   private bool Disposing = false;
   public long LastActivity { get; set; }
@@ -67,7 +66,7 @@ public sealed class NetTcpConnection : IDisposable
   public IPAddress RemoteIpAddress { get; set; }
 
 
-  public NetTcpConnection(TcpClient client, NetServerPacketContainer packetContainer, CancellationToken serverCancellationToken) {
+  public NetTcpConnection(TcpClient client, NetTcpServerPacketContainer packetContainer, CancellationToken serverCancellationToken) {
     _packetContainer = packetContainer;
     Client = client;
     ServerCancellationToken = serverCancellationToken;
@@ -103,8 +102,12 @@ public sealed class NetTcpConnection : IDisposable
 
   private void HandleOutgoingPacketQueue() {
     while (CanProcess) {
-      if (!_outgoingPacketQueue.TryDequeue(out var packet) && packet != null) {
+      var packetExists = _outgoingPacketQueue.TryDequeue(out var packet);
+      if (packetExists) {
         try {
+          if (!PacketWriter.CanWrite) {
+            throw new Exception("Cannot write to the stream");
+          }
           PacketWriter.Write(packet.MessageId);
           PacketWriter.Write(packet.Encrypted);
           PacketWriter.Write(packet.Size);
@@ -121,7 +124,8 @@ public sealed class NetTcpConnection : IDisposable
 
   private void HandleIncomingPacketQueue() {
     while (CanProcess) {
-      if (!_incomingPacketQueue.TryDequeue(out var packet) && packet != null) {
+      var packetExists = _incomingPacketQueue.TryDequeue(out var packet);
+      if (packetExists) {
         try {
           _packetContainer.InvokeHandler(packet.MessageId, this, packet.Message);
         }
@@ -172,6 +176,7 @@ public sealed class NetTcpConnection : IDisposable
                    UnknownPacketReceived?.Invoke(this, new UnknownPacketReceivedEventArgs(this, messageId, encrypted, size, PacketReader.ReadBytes(size)));
                    return;
                  }
+
                  var stream = new MemoryStream(restBytes);
                  var packetReader = new PacketReader(stream);
                  messageInstance.Read(packetReader);
@@ -189,6 +194,7 @@ public sealed class NetTcpConnection : IDisposable
         var encrypted = PacketReader.ReadBoolean();
         var size = PacketReader.ReadInt32();
         var restBytes = PacketReader.ReadBytes(size);
+        Console.WriteLine($"Received packet with id {messageId} and size {size} from {RemoteIpAddress}:{RemotePort}.");
         HandleReceivePacket(messageId, encrypted, size, restBytes);
       }
     }

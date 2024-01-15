@@ -15,6 +15,8 @@ public class PacketWriter
     _binaryWriter = binaryWriter;
   }
 
+  public bool CanWrite => _binaryWriter.BaseStream.CanWrite;
+
   public void Write(bool value) {
     _binaryWriter.Write(value);
   }

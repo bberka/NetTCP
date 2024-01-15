@@ -2,53 +2,85 @@
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using Autofac;
 using NetTCP.Abstract;
 using NetTCP.Attributes;
 
+
 namespace NetTCP.Client;
 
-public delegate void MessageHandlerDelegate(NetTcpClient session, IReadablePacket message);
+
+internal delegate void MessageHandlerDelegate(NetTcpClient client, IReadablePacket readablePacket, ILifetimeScope scope);
 
 public class NetTcpClientPacketContainer
 {
+  private IContainer Container { get; set; }
+
   private delegate IReadablePacket MessageFactoryDelegate();
 
-  private NetTcpClientPacketContainer() { }S
+  internal NetTcpClientPacketContainer() { }
 
-  public static NetTcpClientPacketContainer This {
-    get {
-      _instance ??= new();
-      return _instance;
-    }
-  }
 
   private static NetTcpClientPacketContainer? _instance;
 
-  private ImmutableDictionary<int, MessageFactoryDelegate> _serverMessageFactories;
-  private ImmutableDictionary<Type, int> _clientMessageOpcodes;
+  private ImmutableDictionary<int, MessageFactoryDelegate> _clientMessageFactories;
+  private ImmutableDictionary<Type, int> _serverMessageOpcodes;
 
-  private ImmutableDictionary<int, MessageHandlerDelegate> _serverMessageHandlers;
+  private ImmutableDictionary<int, MessageHandlerDelegate> _clientMessageHandlers;
+
+  private bool _isRegistered = false;
+
+  // private Type _packetAttributeType = typeof(PacketAttribute);
+  // private Type _packetHandlerAttributeType = typeof(PacketHandlerAttribute);
+  // private Type _netTcpConnectionType = typeof(NetTcpClient);
+  // private Type _iReadablePacketType = typeof(IReadablePacket);
+  // private Type _iWriteablePacketType = typeof(IWriteablePacket);
+
+  internal bool IsRegistered() => _isRegistered;
 
   /// <summary>
   /// Register all message handlers and messages from an assembly
+  /// It will also get all types from the entry assembly
+  /// If you provide an assembly it will also get all types from that assembly and concat them
   /// </summary>
   /// <param name="assembly"></param>
-  public void Register(Assembly assembly) {
-    var types = assembly.GetTypes();
-    RegisterMessageHandlers(types);
-    RegisterMessages(types);
+  internal void Register(Assembly? assembly = null) {
+    if (assembly is null) {
+      Register(new[] {
+        Assembly.GetEntryAssembly()
+      });
+      return;
+    }
+
+    Register(new[] {
+      Assembly.GetEntryAssembly(),
+      assembly
+    });
   }
-  
-  public void Register(Assembly[] assembly) {
-    var types = assembly.SelectMany(x => x.GetTypes()).ToArray();
-    RegisterMessageHandlers(types);
-    RegisterMessages(types);
+
+  /// <summary>
+  /// Register all message handlers and messages from an assembly
+  /// It will also get all types from the entry assembly
+  /// If you provide an assembly it will also get all types from that assembly and concat them
+  /// </summary>
+  /// <param name="assembly"></param>
+  internal void Register(Assembly[] assembly) {
+    if (_isRegistered) throw new InvalidOperationException("Packet Container is already registered");
+    var types = assembly.SelectMany(x => x.GetTypes()).ToList();
+    types.AddRange(Assembly.GetEntryAssembly().GetTypes());
+    var array = types.DistinctBy(x => x.FullName).ToArray(); //Remove duplicates
+    RegisterMessageHandlers(array);
+    RegisterMessages(array);
+    foreach (var factory in _clientMessageFactories) {
+      var hasHandler = _clientMessageHandlers.ContainsKey(factory.Key);
+      if (!hasHandler) {
+        throw new Exception($"Message with opcode {factory.Key} has no handler");
+      }
+    }
   }
 
   private void RegisterMessages(Type[] types) {
-    // Assembly.GetExecutingAssembly()
-    //         .GetTypes()
-    //         .Concat(Assembly.GetEntryAssembly().GetTypes());
     var messageFactories = new Dictionary<int, MessageFactoryDelegate>();
     var messageOpcodes = new Dictionary<Type, int>();
 
@@ -57,95 +89,80 @@ public class NetTcpClientPacketContainer
       if (attribute == null)
         continue;
 
-      if (typeof(IReadablePacket).IsAssignableFrom(type)) {
-        var @new = Expression.New(type.GetConstructor(Type.EmptyTypes));
-        messageFactories.Add(attribute.MessageId, Expression.Lambda<MessageFactoryDelegate>(@new).Compile());
+      var isWriteable = type.GetInterface(nameof(IWriteablePacket)) != null;
+      var isReadable = type.GetInterface(nameof(IReadablePacket)) != null;
+      if (isWriteable) {
+        messageOpcodes.Add(type, attribute.MessageId);
+        continue;
       }
 
-      if (typeof(IWriteablePacket).IsAssignableFrom(type))
-        messageOpcodes.Add(type, attribute.MessageId);
+      if (isReadable) {
+        var @new = Expression.New(type.GetConstructor(Type.EmptyTypes));
+        messageFactories.Add(attribute.MessageId, Expression.Lambda<MessageFactoryDelegate>(@new).Compile());
+        continue;
+      }
+
+      //TODO maybe log ? 
     }
 
-    _serverMessageFactories = messageFactories.ToImmutableDictionary();
-    _clientMessageOpcodes = messageOpcodes.ToImmutableDictionary();
-//TODO LOG    
+    _clientMessageFactories = messageFactories.ToImmutableDictionary();
+    _serverMessageOpcodes = messageOpcodes.ToImmutableDictionary();
   }
 
   private void RegisterMessageHandlers(Type[] types) {
     var messageHandlers = new Dictionary<int, MessageHandlerDelegate>();
 
-    foreach (var type in types) {
-      foreach (var method in type.GetMethods()) {
-        if (method.DeclaringType != type)
-          continue;
-
+    foreach (var type in types.Where(x => x.IsPublic)) {
+      foreach (var method in type.GetMethods().Where(x => x.IsPublic && x.IsStatic && x.DeclaringType == type)) {
         var attribute = method.GetCustomAttribute<PacketHandlerAttribute>();
         if (attribute == null)
           continue;
-
-        var sessionParameter = Expression.Parameter(typeof(NetTcpClient));
-        var messageParameter = Expression.Parameter(typeof(IReadablePacket));
-
-        var parameterInfo = method.GetParameters();
-
-        if (method.IsStatic) {
-          #region Debug
-
-          Debug.Assert(parameterInfo.Length == 2);
-          Debug.Assert(typeof(NetTcpClient).IsAssignableFrom(parameterInfo[0].ParameterType));
-          Debug.Assert(typeof(IReadablePacket).IsAssignableFrom(parameterInfo[1].ParameterType));
-
-          #endregion
-
-          var call = Expression.Call(method,
-                                     Expression.Convert(sessionParameter, parameterInfo[0].ParameterType),
-                                     Expression.Convert(messageParameter, parameterInfo[1].ParameterType));
-
-          var lambda =
-            Expression.Lambda<MessageHandlerDelegate>(call, sessionParameter, messageParameter);
-
-          messageHandlers.Add(attribute.MessageId, lambda.Compile());
-        }
-        else {
-          #region Debug
-
-          Debug.Assert(parameterInfo.Length == 1);
-          Debug.Assert(typeof(NetTcpClient).IsAssignableFrom(type));
-          Debug.Assert(typeof(IReadablePacket).IsAssignableFrom(parameterInfo[0].ParameterType));
-
-          #endregion
-
-          var call = Expression.Call(
-                                     Expression.Convert(sessionParameter, type),
-                                     method,
-                                     Expression.Convert(messageParameter, parameterInfo[0].ParameterType));
-
-          var lambda =
-            Expression.Lambda<MessageHandlerDelegate>(call, sessionParameter, messageParameter);
-
-          messageHandlers.Add(attribute.MessageId, lambda.Compile());
-        }
+        var handlerDelegate = BuildMessageHandlerDelegate(method);
+        messageHandlers.Add(attribute.MessageId, handlerDelegate);
       }
     }
 
-    _serverMessageHandlers = messageHandlers.ToImmutableDictionary();
-////TODO LOG    
+    _clientMessageHandlers = messageHandlers.ToImmutableDictionary();
   }
 
+  private MessageHandlerDelegate BuildMessageHandlerDelegate(MethodInfo method) {
+    var sessionParameter = Expression.Parameter(typeof(NetTcpClient));
+    var messageParameter = Expression.Parameter(typeof(IReadablePacket));
+    var scopeParameter = Expression.Parameter(typeof(ILifetimeScope));
+    var parameterInfo = method.GetParameters();
+    var sessionParamInfo = parameterInfo.Single(x => x.ParameterType == typeof(NetTcpClient));
+    var messageParamInfo = parameterInfo.Single(x => x.ParameterType.GetInterface(nameof(IReadablePacket)) != null);
+    var scopeParamInfo = parameterInfo.Single(x => x.ParameterType == typeof(ILifetimeScope));
+    var call = Expression.Call(method,
+                               Expression.Convert(sessionParameter, sessionParamInfo.ParameterType),
+                               Expression.Convert(messageParameter, messageParamInfo.ParameterType),
+                               Expression.Convert(scopeParameter, scopeParamInfo.ParameterType));
+    var lambda = Expression.Lambda<MessageHandlerDelegate>(call, sessionParameter, messageParameter, scopeParameter);
+    return lambda.Compile();
+  }
+
+
   internal IReadablePacket GetMessage(int messageId) {
-    return _serverMessageFactories.TryGetValue(messageId, out MessageFactoryDelegate factory)
+    return _clientMessageFactories.TryGetValue(messageId, out MessageFactoryDelegate factory)
              ? factory.Invoke()
              : null;
   }
 
   internal bool GetOpcode(IWriteablePacket message, out int messageId) {
-    return _clientMessageOpcodes.TryGetValue(message.GetType(), out messageId);
+    return _serverMessageOpcodes.TryGetValue(message.GetType(), out messageId);
   }
 
-  internal MessageHandlerDelegate GetMessageHandler(int messageId) {
-    return _serverMessageHandlers.TryGetValue(messageId, out MessageHandlerDelegate handler)
-             ? handler
-             : null;
+  internal void InvokeHandler(int messageId, NetTcpClient client, IReadablePacket readablePacket) {
+    if (!_clientMessageHandlers.TryGetValue(messageId, out var handlerDelegate)) {
+      //TODO Throw or log or call events
+      return;
+    }
+    using (var scope = Container.BeginLifetimeScope()) {
+      handlerDelegate.Invoke(client, readablePacket, scope);
+    }
   }
-  
+
+  internal void InitDependencyContainer(IContainer container) {
+    Container = container;
+  }
 }

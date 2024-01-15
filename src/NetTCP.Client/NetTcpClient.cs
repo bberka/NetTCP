@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using NetTCP.Abstract;
@@ -9,7 +10,7 @@ namespace NetTCP.Client;
 
 public class NetTcpClient
 {
-
+  protected readonly NetTcpClientPacketContainer PacketContainer;
   public TcpClient Client { get; set; }
   private readonly ConcurrentQueue<ProcessedClientPacket> _outgoingPacketQueue = new();
   private readonly ConcurrentQueue<ProcessedServerPacket> _incomingPacketQueue = new();
@@ -20,9 +21,7 @@ public class NetTcpClient
   protected CancellationTokenSource ClientCancellationTokenSource { get; }
 
   public bool CanProcess => Client.Connected && !ClientCancellationTokenSource.IsCancellationRequested;
-
-  public bool AnyProcessingPackets => !_incomingPacketQueue.IsEmpty || _outgoingPacketQueue.IsEmpty;
-
+  public bool AnyPacketsProcessing => !(_incomingPacketQueue.IsEmpty && _outgoingPacketQueue.IsEmpty);
 
   public long LastActivity { get; set; }
 
@@ -61,24 +60,26 @@ public class NetTcpClient
 
   
 
-  public NetTcpClient(string host, ushort port) {
+  internal NetTcpClient(string host, ushort port, NetTcpClientPacketContainer packetContainer) {
     Client = new TcpClient(host, port);
     ClientCancellationTokenSource = new CancellationTokenSource();
+    PacketContainer = packetContainer;
   }
+
 
   public void Connect() {
-    StartHandleConnectionTask();
-    Task.Run(HandleOutgoingPacketQueue,ClientCancellationTokenSource.Token);
-    Task.Run(HandleIncomingPacketQueue,ClientCancellationTokenSource.Token);
-    
-     
-     
+    Task.Run(HandleConnectionTask,ClientCancellationTokenSource.Token);
+    Task.Run(OutgoingPacketQueueHandlerTask,ClientCancellationTokenSource.Token);
+    Task.Run(IncomingPacketQueueHandlerTask,ClientCancellationTokenSource.Token);
   }
 
-  private async Task HandleOutgoingPacketQueue() {
+  private async Task OutgoingPacketQueueHandlerTask() {
     try {
       while (CanProcess) {
-        if (_outgoingPacketQueue.TryDequeue(out var packet) && packet != null) {
+        var packetExists = _outgoingPacketQueue.TryDequeue(out var packet);
+        if (packetExists) {
+          if(!PacketWriter.CanWrite)
+             throw new Exception("Cannot write to stream");
           PacketWriter.Write(packet.MessageId);
           PacketWriter.Write(packet.Encrypted);
           PacketWriter.Write(packet.Size);
@@ -92,19 +93,13 @@ public class NetTcpClient
     }
   }
 
-  private async Task HandleIncomingPacketQueue() {
+  private async Task IncomingPacketQueueHandlerTask() {
     try {
       while (CanProcess) {
-        if (_incomingPacketQueue.TryDequeue(out var packet) && packet != null) {
-          var messageHandler = NetTcpClientPacketContainer.This.GetMessageHandler(packet.MessageId);
-          if (messageHandler == null) {
-            //invalid message handler
-            //TODO Trigger event
-            return;
-          }
-
+        var packetExists = _incomingPacketQueue.TryDequeue(out var packet);
+        if (packetExists) {
           try {
-            messageHandler.Invoke(this, packet.Message);
+            PacketContainer.InvokeHandler(packet.MessageId,this,packet.Message);
           }
           catch (Exception ex) {
             //TODO ? 
@@ -123,9 +118,10 @@ public class NetTcpClient
 
   public void EnqueuePacketSend(IWriteablePacket message,
                                 bool encrypted = false) {
-    if (!NetTcpClientPacketContainer.This.GetOpcode(message, out var opcode)) {
+    if (!PacketContainer.GetOpcode(message, out var opcode)) {
       //invalid message opcode
       //TODO Trigger event
+      
       return;
     }
     var serverPacket = new ProcessedClientPacket(opcode, message, encrypted);
@@ -135,7 +131,7 @@ public class NetTcpClient
 
   private void HandleReceivePacket(int messageId, bool encrypted, int size) {
     Task.Run((() => {
-                 var messageInstance = NetTcpClientPacketContainer.This.GetMessage(messageId);
+                 var messageInstance = PacketContainer.GetMessage(messageId);
                  if (messageInstance == null) {
                    //invalid message id
                    //TODO Trigger event
@@ -147,25 +143,23 @@ public class NetTcpClient
                }));
   }
 
-  private async void StartHandleConnectionTask() {
-    Task.Run(() => {
-      try {
-        while (CanProcess) {
-          ServerCancellationToken.ThrowIfCancellationRequested();
-          LastActivity = DateTime.Now.Ticks;
-          var messageId = PacketReader.ReadInt32();
-          var encrypted = PacketReader.ReadBoolean();
-          var size = PacketReader.ReadInt32(); //TODO Check if message length is valid
-          HandleReceivePacket(messageId, encrypted, size);
-        }
+  private void HandleConnectionTask() {
+    try {
+      while (CanProcess) {
+        ServerCancellationToken.ThrowIfCancellationRequested();
+        LastActivity = DateTime.Now.Ticks;
+        var messageId = PacketReader.ReadInt32();
+        var encrypted = PacketReader.ReadBoolean();
+        var size = PacketReader.ReadInt32(); //TODO Check if message length is valid
+        HandleReceivePacket(messageId, encrypted, size);
       }
-      catch (Exception ex) {
-        //TODO Trigger event
-      }
-      finally {
-        Disconnect(DisconnectReason.Unknown);
-      }
-    },ClientCancellationTokenSource.Token);
+    }
+    catch (Exception ex) {
+      //TODO Trigger event
+    }
+    finally {
+      Disconnect(DisconnectReason.Unknown);
+    }
   }
 
   private void Disconnect(DisconnectReason unknown) {

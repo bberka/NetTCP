@@ -1,18 +1,21 @@
-﻿using System.Net;
+﻿namespace NetTCP.Client;
+
+
+
+using System.Net;
 using System.Reflection;
 using Autofac;
 using Autofac.Core;
 
-namespace NetTCP.Server;
 
-public class NetTcpServerBuilder
+public class NetTcpClientBuilder
 {
   private ContainerBuilder _containerBuilder;
-  private NetTcpServerPacketContainer _packetContainer;
+  private NetTcpClientPacketContainer _packetContainer;
 
-  private NetTcpServerBuilder() {
+  private NetTcpClientBuilder() {
     _containerBuilder = new ContainerBuilder();
-    _packetContainer = new NetTcpServerPacketContainer();
+    _packetContainer = new NetTcpClientPacketContainer();
   }
 
 
@@ -21,72 +24,71 @@ public class NetTcpServerBuilder
   /// It will register all packets from the entry assembly.
   /// </summary>
   /// <returns></returns>
-  public static NetTcpServerBuilder Create() {
-    var builder = new NetTcpServerBuilder();
-    return builder;
+  public static NetTcpClientBuilder Create() {
+   return new NetTcpClientBuilder();
   }
 
-  public NetTcpServerBuilder RegisterSingleton<TService, TImplementation>() where TImplementation : TService {
+  public NetTcpClientBuilder RegisterSingleton<TService, TImplementation>() where TImplementation : TService {
     _containerBuilder.RegisterType<TImplementation>().As<TService>().SingleInstance();
     return this;
   }
 
-  public NetTcpServerBuilder RegisterSingleton<TService>(TService instance) where TService : class {
+  public NetTcpClientBuilder RegisterSingleton<TService>(TService instance) where TService : class {
     _containerBuilder.RegisterInstance(instance).As<TService>().SingleInstance();
     return this;
   }
 
-  public NetTcpServerBuilder RegisterSingleton<TService>(Func<IComponentContext, TService> factory) where TService : class {
+  public NetTcpClientBuilder RegisterSingleton<TService>(Func<IComponentContext, TService> factory) where TService : class {
     _containerBuilder.Register(factory).As<TService>().SingleInstance();
     return this;
   }
 
-  public NetTcpServerBuilder RegisterSingleton<TService>(Func<IComponentContext, IEnumerable<Parameter>, TService> factory) where TService : class {
+  public NetTcpClientBuilder RegisterSingleton<TService>(Func<IComponentContext, IEnumerable<Parameter>, TService> factory) where TService : class {
     _containerBuilder.Register(factory).As<TService>().SingleInstance();
     return this;
   }
 
-  public NetTcpServerBuilder RegisterSingleton<TService>(Func<IComponentContext, IEnumerable<Parameter>, Task<TService>> factory) where TService : class {
+  public NetTcpClientBuilder RegisterSingleton<TService>(Func<IComponentContext, IEnumerable<Parameter>, Task<TService>> factory) where TService : class {
     _containerBuilder.Register(factory).As<TService>().SingleInstance();
     return this;
   }
 
-  public NetTcpServerBuilder RegisterScoped<TService, TImplementation>() where TImplementation : TService {
+  public NetTcpClientBuilder RegisterScoped<TService, TImplementation>() where TImplementation : TService {
     _containerBuilder.RegisterType<TImplementation>().As<TService>().InstancePerLifetimeScope();
     return this;
   }
 
-  public NetTcpServerBuilder RegisterScoped<TService>(Func<IComponentContext, TService> factory) where TService : class {
+  public NetTcpClientBuilder RegisterScoped<TService>(Func<IComponentContext, TService> factory) where TService : class {
     _containerBuilder.Register(factory).As<TService>().InstancePerLifetimeScope();
     return this;
   }
 
-  public NetTcpServerBuilder RegisterScoped<TService>(Func<IComponentContext, IEnumerable<Parameter>, TService> factory) where TService : class {
+  public NetTcpClientBuilder RegisterScoped<TService>(Func<IComponentContext, IEnumerable<Parameter>, TService> factory) where TService : class {
     _containerBuilder.Register(factory).As<TService>().InstancePerLifetimeScope();
     return this;
   }
 
-  public NetTcpServerBuilder RegisterScoped<TService>(Func<IComponentContext, IEnumerable<Parameter>, Task<TService>> factory) where TService : class {
+  public NetTcpClientBuilder RegisterScoped<TService>(Func<IComponentContext, IEnumerable<Parameter>, Task<TService>> factory) where TService : class {
     _containerBuilder.Register(factory).As<TService>().InstancePerLifetimeScope();
     return this;
   }
 
-  public NetTcpServerBuilder RegisterTransient<TService, TImplementation>() where TImplementation : TService {
+  public NetTcpClientBuilder RegisterTransient<TService, TImplementation>() where TImplementation : TService {
     _containerBuilder.RegisterType<TImplementation>().As<TService>().InstancePerDependency();
     return this;
   }
 
-  public NetTcpServerBuilder RegisterTransient<TService>(Func<IComponentContext, TService> factory) where TService : class {
+  public NetTcpClientBuilder RegisterTransient<TService>(Func<IComponentContext, TService> factory) where TService : class {
     _containerBuilder.Register(factory).As<TService>().InstancePerDependency();
     return this;
   }
 
-  public NetTcpServerBuilder RegisterTransient<TService>(Func<IComponentContext, IEnumerable<Parameter>, TService> factory) where TService : class {
+  public NetTcpClientBuilder RegisterTransient<TService>(Func<IComponentContext, IEnumerable<Parameter>, TService> factory) where TService : class {
     _containerBuilder.Register(factory).As<TService>().InstancePerDependency();
     return this;
   }
 
-  public NetTcpServerBuilder RegisterTransient<TService>(Func<IComponentContext, IEnumerable<Parameter>, Task<TService>> factory) where TService : class {
+  public NetTcpClientBuilder RegisterTransient<TService>(Func<IComponentContext, IEnumerable<Parameter>, Task<TService>> factory) where TService : class {
     _containerBuilder.Register(factory).As<TService>().InstancePerDependency();
     return this;
   }
@@ -99,25 +101,25 @@ public class NetTcpServerBuilder
   /// </summary>
   /// <param name="assembly"></param>
   /// <returns></returns>
-  public NetTcpServerBuilder RegisterPacketsFromAssembly(Assembly assembly) {
+  public NetTcpClientBuilder RegisterPacketsFromAssembly(Assembly assembly) {
     _packetContainer.Register(assembly);
     return this;
   }
 
-  public NetTcpServer Build(string ip, ushort port) {
+  public NetTcpClient Build(string host, ushort port) {
     if (!_packetContainer.IsRegistered()) {
       _packetContainer.Register();
     }
 
-    var parseIp = IPAddress.TryParse(ip, out var ipAddress);
+    var parseIp = IPAddress.TryParse(host, out var ipAddress);
     if (parseIp == false)
-      throw new ArgumentException("Invalid ip address: " + ip, nameof(ip));
+      throw new ArgumentException("Invalid ip address: " + host, nameof(host));
     var isValidPort = NetTcpTools.IsValidPort(port);
     if (isValidPort == false)
       throw new ArgumentException("Invalid port: " + port, nameof(port));
     var container = _containerBuilder.Build();
     _packetContainer.InitDependencyContainer(container);
-    var server = new NetTcpServer(ipAddress, port, _packetContainer);
+    var server = new NetTcpClient(host, port, _packetContainer);
     return server;
   }
 }

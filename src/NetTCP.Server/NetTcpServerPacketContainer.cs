@@ -11,21 +11,21 @@ namespace NetTCP.Server;
 
 internal delegate void MessageHandlerDelegate(NetTcpConnection connection, IReadablePacket readablePacket, ILifetimeScope scope);
 
-public class NetServerPacketContainer
+public class NetTcpServerPacketContainer
 {
   private IContainer Container { get; set; }
 
   private delegate IReadablePacket MessageFactoryDelegate();
 
-  internal NetServerPacketContainer() { }
+  internal NetTcpServerPacketContainer() { }
 
 
-  private static NetServerPacketContainer? _instance;
+  private static NetTcpServerPacketContainer? _instance;
 
-  private ImmutableDictionary<int, MessageFactoryDelegate> _clientMessageFactories;
-  private ImmutableDictionary<Type, int> _serverMessageOpcodes;
+  private ImmutableDictionary<int, MessageFactoryDelegate> _serverMessageFactories;
+  private ImmutableDictionary<Type, int> _clientMessageOpcodes;
 
-  private ImmutableDictionary<int, MessageHandlerDelegate> _clientMessageHandlers;
+  private ImmutableDictionary<int, MessageHandlerDelegate> _serverMessageHandlers;
 
   private bool _isRegistered = false;
 
@@ -70,8 +70,8 @@ public class NetServerPacketContainer
     var array = types.DistinctBy(x => x.FullName).ToArray(); //Remove duplicates
     RegisterMessageHandlers(array);
     RegisterMessages(array);
-    foreach (var factory in _clientMessageFactories) {
-      var hasHandler = _clientMessageHandlers.ContainsKey(factory.Key);
+    foreach (var factory in _serverMessageFactories) {
+      var hasHandler = _serverMessageHandlers.ContainsKey(factory.Key);
       if (!hasHandler) {
         throw new Exception($"Message with opcode {factory.Key} has no handler");
       }
@@ -103,15 +103,15 @@ public class NetServerPacketContainer
       //TODO maybe log ? 
     }
 
-    _clientMessageFactories = messageFactories.ToImmutableDictionary();
-    _serverMessageOpcodes = messageOpcodes.ToImmutableDictionary();
+    _serverMessageFactories = messageFactories.ToImmutableDictionary();
+    _clientMessageOpcodes = messageOpcodes.ToImmutableDictionary();
   }
 
   private void RegisterMessageHandlers(Type[] types) {
     var messageHandlers = new Dictionary<int, MessageHandlerDelegate>();
 
     foreach (var type in types.Where(x => x.IsPublic)) {
-      foreach (var method in type.GetMethods().Where(x => x.IsPublic && x.IsStatic && x.DeclaringType != type)) {
+      foreach (var method in type.GetMethods().Where(x => x.IsPublic && x.IsStatic && x.DeclaringType == type)) {
         var attribute = method.GetCustomAttribute<PacketHandlerAttribute>();
         if (attribute == null)
           continue;
@@ -120,7 +120,7 @@ public class NetServerPacketContainer
       }
     }
 
-    _clientMessageHandlers = messageHandlers.ToImmutableDictionary();
+    _serverMessageHandlers = messageHandlers.ToImmutableDictionary();
   }
 
   private MessageHandlerDelegate BuildMessageHandlerDelegate(MethodInfo method) {
@@ -141,17 +141,17 @@ public class NetServerPacketContainer
 
 
   internal IReadablePacket GetMessage(int messageId) {
-    return _clientMessageFactories.TryGetValue(messageId, out MessageFactoryDelegate factory)
+    return _serverMessageFactories.TryGetValue(messageId, out MessageFactoryDelegate factory)
              ? factory.Invoke()
              : null;
   }
 
   internal bool GetOpcode(IWriteablePacket message, out int messageId) {
-    return _serverMessageOpcodes.TryGetValue(message.GetType(), out messageId);
+    return _clientMessageOpcodes.TryGetValue(message.GetType(), out messageId);
   }
 
   internal void InvokeHandler(int messageId, NetTcpConnection connection, IReadablePacket readablePacket) {
-    if (!_clientMessageHandlers.TryGetValue(messageId, out var handlerDelegate)) {
+    if (!_serverMessageHandlers.TryGetValue(messageId, out var handlerDelegate)) {
       //TODO Throw or log or call events
       return;
     }
