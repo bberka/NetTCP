@@ -11,6 +11,7 @@ namespace NetTCP.Server;
 
 public sealed class NetTcpConnection : IDisposable
 {
+  private readonly NetServerPacketContainer _packetContainer;
   private PacketReader _packetReader;
   private PacketWriter _packetWriter;
   protected TcpClient Client { get; }
@@ -25,6 +26,7 @@ public sealed class NetTcpConnection : IDisposable
   public bool AnyProcessingPackets => !_incomingPacketQueue.IsEmpty || _outgoingPacketQueue.IsEmpty;
 
 
+  private bool Disposing = false;
   public long LastActivity { get; set; }
 
 
@@ -65,22 +67,21 @@ public sealed class NetTcpConnection : IDisposable
   public IPAddress RemoteIpAddress { get; set; }
 
 
-
-  public NetTcpConnection(TcpClient client, CancellationToken serverCancellationToken) {
+  public NetTcpConnection(TcpClient client, NetServerPacketContainer packetContainer, CancellationToken serverCancellationToken) {
+    _packetContainer = packetContainer;
     Client = client;
     ServerCancellationToken = serverCancellationToken;
     ClientCancellationTokenSource = new CancellationTokenSource();
-    _incomingPacketQueue = new();
-    _outgoingPacketQueue = new();
-    RemoteIpAddress = ((IPEndPoint) Client.Client.RemoteEndPoint).Address;
-    RemotePort = (ushort)((IPEndPoint) Client.Client.RemoteEndPoint).Port;
+    _incomingPacketQueue = new ConcurrentQueue<ProcessedClientPacket>();
+    _outgoingPacketQueue = new ConcurrentQueue<ProcessedServerPacket>();
+    RemoteIpAddress = ((IPEndPoint)Client.Client.RemoteEndPoint).Address;
+    RemotePort = (ushort)((IPEndPoint)Client.Client.RemoteEndPoint).Port;
     _ = Task.Run(HandleConnection, ClientCancellationTokenSource.Token);
     _ = Task.Run(HandleIncomingPacketQueue, ClientCancellationTokenSource.Token);
     _ = Task.Run(HandleOutgoingPacketQueue, ClientCancellationTokenSource.Token);
   }
 
-  
-    
+
   private event EventHandler<ConnectionErrorEventArgs> ConnectionError;
   private event EventHandler<ClientDisconnectedEventArgs> ClientDisconnected;
   private event EventHandler<UnknownPacketReceivedEventArgs> UnknownPacketReceived;
@@ -88,15 +89,15 @@ public sealed class NetTcpConnection : IDisposable
   private event EventHandler<MessageHandlerNotFoundEventArgs> MessageHandlerNotFound;
   private event EventHandler<PacketQueuedEventArgs> PacketQueued;
   private event EventHandler<PacketReceivedEventArgs> PacketReceived;
-  
-  protected internal void SubscribeToEvents(NetTcpServer server) {
-    server.ConnectionError += ConnectionError;
-    server.ClientDisconnected += ClientDisconnected;
-    server.UnknownPacketReceived += UnknownPacketReceived;
-    server.UnknownPacketSendAttempted += UnknownPacketSendAttempted;
-    server.MessageHandlerNotFound += MessageHandlerNotFound;
-    server.PacketQueued += PacketQueued;
-    server.PacketReceived += PacketReceived;
+
+  internal void SubscribeToEvents(NetTcpServer netTcpServer) {
+    netTcpServer.ConnectionError += ConnectionError;
+    netTcpServer.ClientDisconnected += ClientDisconnected;
+    netTcpServer.UnknownPacketReceived += UnknownPacketReceived;
+    netTcpServer.UnknownPacketSendAttempted += UnknownPacketSendAttempted;
+    netTcpServer.MessageHandlerNotFound += MessageHandlerNotFound;
+    netTcpServer.PacketQueued += PacketQueued;
+    netTcpServer.PacketReceived += PacketReceived;
   }
 
 
@@ -121,14 +122,8 @@ public sealed class NetTcpConnection : IDisposable
   private void HandleIncomingPacketQueue() {
     while (CanProcess) {
       if (!_incomingPacketQueue.TryDequeue(out var packet) && packet != null) {
-        var messageHandler = ServerPacketTable.This.GetMessageHandler(packet.MessageId);
-        if (messageHandler == null) {
-          MessageHandlerNotFound?.Invoke(this, new MessageHandlerNotFoundEventArgs(this, packet));
-          return;
-        }
-
         try {
-          messageHandler.Invoke(this, packet.Message);
+          _packetContainer.InvokeHandler(packet.MessageId, this, packet.Message);
         }
         catch (Exception ex) {
           ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex));
@@ -160,26 +155,26 @@ public sealed class NetTcpConnection : IDisposable
 
   public void EnqueuePacketSend(IPacketWriteable message,
                                 bool encrypted = false) {
-    if (!ServerPacketTable.This.GetOpcode(message, out var opcode)) {
+    if (!_packetContainer.GetOpcode(message, out var opcode)) {
       UnknownPacketSendAttempted?.Invoke(this, new UnknownPacketSendAttemptEventArgs(this, message, encrypted));
       return;
     }
 
-    var serverPacket = new ProcessedServerPacket(opcode, message, encrypted);
+    var serverPacket = new ProcessedServerPacket(opcode, encrypted, message);
     _outgoingPacketQueue.Enqueue(serverPacket);
   }
 
 
   private void HandleReceivePacket(int messageId, bool encrypted, int size) {
     Task.Run((() => {
-                 var messageInstance = ServerPacketTable.This.GetMessage(messageId);
+                 var messageInstance = _packetContainer.GetMessage(messageId);
                  if (messageInstance == null) {
-                    UnknownPacketReceived?.Invoke(this, new UnknownPacketReceivedEventArgs(this, messageId, encrypted, size, PacketReader.ReadBytes(size)));
+                   UnknownPacketReceived?.Invoke(this, new UnknownPacketReceivedEventArgs(this, messageId, encrypted, size, PacketReader.ReadBytes(size)));
                    return;
                  }
 
                  messageInstance.Read(PacketReader);
-                 var clientPacket = new ProcessedClientPacket(messageId, messageInstance, encrypted);
+                 var clientPacket = new ProcessedClientPacket(messageId, encrypted,messageInstance);
                  _incomingPacketQueue.Enqueue(clientPacket);
                }));
   }
@@ -191,7 +186,7 @@ public sealed class NetTcpConnection : IDisposable
         LastActivity = DateTime.Now.Ticks;
         var messageId = PacketReader.ReadInt32();
         var encrypted = PacketReader.ReadBoolean();
-        var size = PacketReader.ReadInt32(); 
+        var size = PacketReader.ReadInt32();
         HandleReceivePacket(messageId, encrypted, size);
       }
     }

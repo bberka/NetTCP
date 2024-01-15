@@ -7,7 +7,7 @@ using NetTCP.Server;
 
 namespace NetTCP.Example.Server.Network.Message.Handler;
 
-public class PingHandler : IPacketHandler
+public static class PingHandler 
 {
   [PacketHandler(OpCodes.CMPing)]
   public static void HandlePing(NetTcpConnection connection, CMPing request) {

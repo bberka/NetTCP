@@ -5,8 +5,9 @@ namespace NetTCP.Server.Model;
 public class ProcessedClientPacket : PacketBase
 {
   public ProcessedClientPacket(int messageId,
-                          IPacketReadable message,
-                          bool encrypted) {
+                          bool encrypted,
+                          IPacketReadable message
+    ) {
     MessageId = messageId;
     Encrypted = encrypted;
     Message = message;

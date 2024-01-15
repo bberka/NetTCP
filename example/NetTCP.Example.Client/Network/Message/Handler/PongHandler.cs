@@ -8,7 +8,7 @@ using NetTCP.Example.Shared.Network.Packets.Server;
 
 namespace NetTCP.Example.Client.Network.Message.Handler;
 
-public class PongHandler : IPacketHandler
+public static class PongHandler
 {
   [PacketHandler(OpCodes.SMPong)]
   public static void HandlePing(NetTcpClient client, SMPong request) {
