@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Net.Sockets;
 using System.Text;
 using NetTCP.Abstract;
 using NetTCP.Client.Model;
@@ -9,9 +10,9 @@ namespace NetTCP.Client;
 public class NetTcpClient
 {
 
-  public System.Net.Sockets.TcpClient Client { get; set; }
-  private ConcurrentQueue<ProcessedClientPacket> _outgoingPacketQueue;
-  private ConcurrentQueue<ProcessedServerPacket> _incomingPacketQueue;
+  public TcpClient Client { get; set; }
+  private readonly ConcurrentQueue<ProcessedClientPacket> _outgoingPacketQueue = new();
+  private readonly ConcurrentQueue<ProcessedServerPacket> _incomingPacketQueue = new();
 
   private PacketReader _packetReader;
   private PacketWriter _packetWriter;
@@ -61,12 +62,8 @@ public class NetTcpClient
   
 
   public NetTcpClient(string host, ushort port) {
-    Client = new System.Net.Sockets.TcpClient(host, port);
+    Client = new TcpClient(host, port);
     ClientCancellationTokenSource = new CancellationTokenSource();
-    _outgoingPacketQueue = new ConcurrentQueue<ProcessedClientPacket>();
-    _incomingPacketQueue = new ConcurrentQueue<ProcessedServerPacket>();
-
-
   }
 
   public void Connect() {
@@ -99,7 +96,7 @@ public class NetTcpClient
     try {
       while (CanProcess) {
         if (_incomingPacketQueue.TryDequeue(out var packet) && packet != null) {
-          var messageHandler = ClientPacketTable.This.GetMessageHandler(packet.MessageId);
+          var messageHandler = NetTcpClientPacketContainer.This.GetMessageHandler(packet.MessageId);
           if (messageHandler == null) {
             //invalid message handler
             //TODO Trigger event
@@ -124,9 +121,9 @@ public class NetTcpClient
     }
   }
 
-  public void EnqueuePacketSend(IPacketWriteable message,
+  public void EnqueuePacketSend(IWriteablePacket message,
                                 bool encrypted = false) {
-    if (!ClientPacketTable.This.GetOpcode(message, out var opcode)) {
+    if (!NetTcpClientPacketContainer.This.GetOpcode(message, out var opcode)) {
       //invalid message opcode
       //TODO Trigger event
       return;
@@ -138,7 +135,7 @@ public class NetTcpClient
 
   private void HandleReceivePacket(int messageId, bool encrypted, int size) {
     Task.Run((() => {
-                 var messageInstance = ClientPacketTable.This.GetMessage(messageId);
+                 var messageInstance = NetTcpClientPacketContainer.This.GetMessage(messageId);
                  if (messageInstance == null) {
                    //invalid message id
                    //TODO Trigger event

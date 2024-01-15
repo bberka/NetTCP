@@ -93,7 +93,7 @@ public class NetTcpServerBuilder
 
   /// <summary>
   /// This method can only be called once.
-  /// It will register all packets from the given assembly.
+  /// It will register all packets and packet handlers from the given assembly.
   /// You do not need to provide an assembly if you want to register all packets from the entry assembly.
   /// If you provide an assembly that is different than entry assembly it will register all packets from the entry assembly and the given assembly.
   /// </summary>
@@ -116,9 +116,7 @@ public class NetTcpServerBuilder
     if (isValidPort == false)
       throw new ArgumentException("Invalid port: " + port, nameof(port));
     var container = _containerBuilder.Build();
-    var packetValidate = _packetContainer.Validate(container);
-    if (packetValidate == false)
-      throw new InvalidOperationException("Packet validation failed");
+    _packetContainer.InitDependencyContainer(container);
     var server = new NetTcpServer(ipAddress, port, _packetContainer);
     return server;
   }

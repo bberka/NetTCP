@@ -5,7 +5,7 @@ namespace NetTCP.Client.Model;
 
 public class ProcessedClientPacket  : PacketBase
 {
-  public ProcessedClientPacket(int messageId, IPacketWriteable message, bool encrypted) {
+  public ProcessedClientPacket(int messageId, IWriteablePacket message, bool encrypted) {
     var memoryStream = new MemoryStream();
     var writer = new PacketWriter(memoryStream);
     message.Write(writer);

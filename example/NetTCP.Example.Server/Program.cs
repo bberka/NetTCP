@@ -3,6 +3,8 @@
 using System.Net;
 using System.Reflection;
 using NetTCP.Attributes;
+using NetTCP.Example.Server.Abstract;
+using NetTCP.Example.Server.Concrete;
 using NetTCP.Example.Shared;
 using NetTCP.Example.Shared.Network.Packets.Server;
 using NetTCP.Server;
@@ -10,8 +12,9 @@ using NetTCP.Server;
 
 
 var builder = NetTcpServerBuilder.Create();
-
 builder.RegisterPacketsFromAssembly(typeof(OpCodes).Assembly);
+
+builder.RegisterSingleton<IServerInfoMgr,ServerInfoMgr>();
 
 var server = builder.Build("127.0.0.1", 8080);
 

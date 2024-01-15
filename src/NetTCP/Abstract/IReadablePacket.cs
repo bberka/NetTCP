@@ -2,7 +2,7 @@
 
 namespace NetTCP.Abstract;
 
-public interface IPacketReadable
+public interface IReadablePacket
 {
   public abstract void Read(PacketReader reader);
   

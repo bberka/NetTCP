@@ -101,7 +101,7 @@ public class NetTcpServer
     Listener.Server.Dispose();
   }
 
-  public void EnqueueBroadcastPacket(IPacketWriteable message,
+  public void EnqueueBroadcastPacket(IWriteablePacket message,
                                      bool encrypted = false) {
     foreach (var connection in Connections) {
       connection.EnqueuePacketSend(message, encrypted);

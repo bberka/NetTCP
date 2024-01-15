@@ -2,7 +2,7 @@
 
 namespace NetTCP.Abstract;
 
-public interface IPacketWriteable
+public interface IWriteablePacket
 {
   public abstract void Write(PacketWriter writer);
 

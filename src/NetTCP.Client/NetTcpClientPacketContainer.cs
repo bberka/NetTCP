@@ -7,22 +7,22 @@ using NetTCP.Attributes;
 
 namespace NetTCP.Client;
 
-public delegate void MessageHandlerDelegate(NetTcpClient session, IPacketReadable message);
+public delegate void MessageHandlerDelegate(NetTcpClient session, IReadablePacket message);
 
-public class ClientPacketTable
+public class NetTcpClientPacketContainer
 {
-  private delegate IPacketReadable MessageFactoryDelegate();
+  private delegate IReadablePacket MessageFactoryDelegate();
 
-  private ClientPacketTable() { }
+  private NetTcpClientPacketContainer() { }S
 
-  public static ClientPacketTable This {
+  public static NetTcpClientPacketContainer This {
     get {
       _instance ??= new();
       return _instance;
     }
   }
 
-  private static ClientPacketTable? _instance;
+  private static NetTcpClientPacketContainer? _instance;
 
   private ImmutableDictionary<int, MessageFactoryDelegate> _serverMessageFactories;
   private ImmutableDictionary<Type, int> _clientMessageOpcodes;
@@ -57,12 +57,12 @@ public class ClientPacketTable
       if (attribute == null)
         continue;
 
-      if (typeof(IPacketReadable).IsAssignableFrom(type)) {
+      if (typeof(IReadablePacket).IsAssignableFrom(type)) {
         var @new = Expression.New(type.GetConstructor(Type.EmptyTypes));
         messageFactories.Add(attribute.MessageId, Expression.Lambda<MessageFactoryDelegate>(@new).Compile());
       }
 
-      if (typeof(IPacketWriteable).IsAssignableFrom(type))
+      if (typeof(IWriteablePacket).IsAssignableFrom(type))
         messageOpcodes.Add(type, attribute.MessageId);
     }
 
@@ -84,7 +84,7 @@ public class ClientPacketTable
           continue;
 
         var sessionParameter = Expression.Parameter(typeof(NetTcpClient));
-        var messageParameter = Expression.Parameter(typeof(IPacketReadable));
+        var messageParameter = Expression.Parameter(typeof(IReadablePacket));
 
         var parameterInfo = method.GetParameters();
 
@@ -93,7 +93,7 @@ public class ClientPacketTable
 
           Debug.Assert(parameterInfo.Length == 2);
           Debug.Assert(typeof(NetTcpClient).IsAssignableFrom(parameterInfo[0].ParameterType));
-          Debug.Assert(typeof(IPacketReadable).IsAssignableFrom(parameterInfo[1].ParameterType));
+          Debug.Assert(typeof(IReadablePacket).IsAssignableFrom(parameterInfo[1].ParameterType));
 
           #endregion
 
@@ -111,7 +111,7 @@ public class ClientPacketTable
 
           Debug.Assert(parameterInfo.Length == 1);
           Debug.Assert(typeof(NetTcpClient).IsAssignableFrom(type));
-          Debug.Assert(typeof(IPacketReadable).IsAssignableFrom(parameterInfo[0].ParameterType));
+          Debug.Assert(typeof(IReadablePacket).IsAssignableFrom(parameterInfo[0].ParameterType));
 
           #endregion
 
@@ -132,13 +132,13 @@ public class ClientPacketTable
 ////TODO LOG    
   }
 
-  internal IPacketReadable GetMessage(int messageId) {
+  internal IReadablePacket GetMessage(int messageId) {
     return _serverMessageFactories.TryGetValue(messageId, out MessageFactoryDelegate factory)
              ? factory.Invoke()
              : null;
   }
 
-  internal bool GetOpcode(IPacketWriteable message, out int messageId) {
+  internal bool GetOpcode(IWriteablePacket message, out int messageId) {
     return _clientMessageOpcodes.TryGetValue(message.GetType(), out messageId);
   }
 

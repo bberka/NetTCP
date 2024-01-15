@@ -153,7 +153,7 @@ public sealed class NetTcpConnection : IDisposable
     }
   }
 
-  public void EnqueuePacketSend(IPacketWriteable message,
+  public void EnqueuePacketSend(IWriteablePacket message,
                                 bool encrypted = false) {
     if (!_packetContainer.GetOpcode(message, out var opcode)) {
       UnknownPacketSendAttempted?.Invoke(this, new UnknownPacketSendAttemptEventArgs(this, message, encrypted));
@@ -165,16 +165,17 @@ public sealed class NetTcpConnection : IDisposable
   }
 
 
-  private void HandleReceivePacket(int messageId, bool encrypted, int size) {
+  private void HandleReceivePacket(int messageId, bool encrypted, int size, byte[] restBytes) {
     Task.Run((() => {
                  var messageInstance = _packetContainer.GetMessage(messageId);
                  if (messageInstance == null) {
                    UnknownPacketReceived?.Invoke(this, new UnknownPacketReceivedEventArgs(this, messageId, encrypted, size, PacketReader.ReadBytes(size)));
                    return;
                  }
-
-                 messageInstance.Read(PacketReader);
-                 var clientPacket = new ProcessedClientPacket(messageId, encrypted,messageInstance);
+                 var stream = new MemoryStream(restBytes);
+                 var packetReader = new PacketReader(stream);
+                 messageInstance.Read(packetReader);
+                 var clientPacket = new ProcessedClientPacket(messageId, encrypted, messageInstance);
                  _incomingPacketQueue.Enqueue(clientPacket);
                }));
   }
@@ -187,7 +188,8 @@ public sealed class NetTcpConnection : IDisposable
         var messageId = PacketReader.ReadInt32();
         var encrypted = PacketReader.ReadBoolean();
         var size = PacketReader.ReadInt32();
-        HandleReceivePacket(messageId, encrypted, size);
+        var restBytes = PacketReader.ReadBytes(size);
+        HandleReceivePacket(messageId, encrypted, size, restBytes);
       }
     }
     catch (Exception ex) {

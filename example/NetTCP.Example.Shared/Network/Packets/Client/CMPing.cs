@@ -5,8 +5,8 @@ using NetTCP.Serialization;
 namespace NetTCP.Example.Shared.Network.Packets.Client;
 
 [Packet(OpCodes.CMPing)]
-public class CMPing : IPacketWriteable,
-                      IPacketReadable
+public class CMPing : IWriteablePacket,
+                      IReadablePacket
 {
   public long Timestamp { get; set; } = 0;
 

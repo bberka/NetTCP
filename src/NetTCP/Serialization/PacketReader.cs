@@ -13,6 +13,7 @@ public class PacketReader
     _binaryReader = new BinaryReader(input);
     // _length = length;
   }
+
   public PacketReader(BinaryReader binaryReader) {
     _binaryReader = binaryReader;
     // _length = length;
@@ -78,26 +79,26 @@ public class PacketReader
     CheckNextReadLengthOverflow(4);
     return _binaryReader.ReadUInt32();
   }
-  
+
   public ushort ReadUInt16() {
     CheckNextReadLengthOverflow(2);
     return _binaryReader.ReadUInt16();
   }
-  
+
   public ulong ReadUInt64() {
     CheckNextReadLengthOverflow(8);
     return _binaryReader.ReadUInt64();
   }
-  
+
   public sbyte ReadSByte() {
     CheckNextReadLengthOverflow(1);
     return _binaryReader.ReadSByte();
   }
-  
+
   public void Flush() {
     _binaryReader.BaseStream.Flush();
   }
-   
+
 
   // public IPacketReadable Read<T>() where T : IPacketReadable, new() {
   //   var instance = new T();

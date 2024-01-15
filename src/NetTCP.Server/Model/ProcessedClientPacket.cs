@@ -6,12 +6,12 @@ public class ProcessedClientPacket : PacketBase
 {
   public ProcessedClientPacket(int messageId,
                           bool encrypted,
-                          IPacketReadable message
+                          IReadablePacket message
     ) {
     MessageId = messageId;
     Encrypted = encrypted;
     Message = message;
   }
-  public IPacketReadable Message { get; set; }
+  public IReadablePacket Message { get; set; }
 
 }

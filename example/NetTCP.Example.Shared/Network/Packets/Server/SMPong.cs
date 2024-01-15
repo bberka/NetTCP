@@ -5,8 +5,8 @@ using NetTCP.Serialization;
 namespace NetTCP.Example.Shared.Network.Packets.Server;
 
 [Packet(OpCodes.SMPong)]
-public class SMPong : IPacketWriteable,
-                      IPacketReadable
+public class SMPong : IWriteablePacket,
+                      IReadablePacket
 {
   public long Timestamp { get; set; } = 0;
 

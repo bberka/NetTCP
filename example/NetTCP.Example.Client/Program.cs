@@ -8,7 +8,7 @@ using NetTCP.Example.Shared.Network.Packets.Client;
 
 var entry = Assembly.GetEntryAssembly();
 var shared = typeof(OpCodes).Assembly;
-ClientPacketTable.This.Register(new[] {
+NetTcpClientPacketContainer.This.Register(new[] {
   entry,
   shared
 });
