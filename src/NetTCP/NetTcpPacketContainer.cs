@@ -48,9 +48,7 @@ public abstract class NetTcpPacketContainer<T> where T : class
       if (attribute == null)
         continue;
       var handlerDelegate = BuildMessageHandlerDelegate(method);
-      var added = messageHandlers.TryAdd(attribute.MessageId, handlerDelegate);
-      if (added == false)
-        throw new Exception($"Message with opcode {attribute.MessageId} has multiple handlers");
+      messageHandlers.Add(attribute.MessageId, handlerDelegate);
     }
 
     MessageHandlers = messageHandlers.ToImmutableDictionary();
@@ -84,13 +82,13 @@ public abstract class NetTcpPacketContainer<T> where T : class
     MessageFactories = messageFactories.ToImmutableDictionary();
     OpCodes = messageOpcodes.ToImmutableDictionary();
 
-    foreach (var factory in MessageFactories) {
-      var hasHandler = MessageHandlers.ContainsKey(factory.Key);
-      if (!hasHandler) {
-        //TODO LOG or TRIGGER EVENT
-        // throw new Exception($"Message with opcode {factory.Key} has no handler");
-      }
-    }
+    // foreach (var factory in MessageFactories) {
+    //   var hasHandler = MessageHandlers.ContainsKey(factory.Key);
+    //   if (!hasHandler) {
+    //     //TODO LOG or TRIGGER EVENT
+    //     // throw new Exception($"Message with opcode {factory.Key} has no handler");
+    //   }
+    // }
   }
 
 

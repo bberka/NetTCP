@@ -12,7 +12,7 @@ public static class PingHandler
   public static void HandlePing(NetTcpConnection connection, CmPing request, ILifetimeScope scope) {
     var serverInfoMgr = scope.Resolve<IServerInfoMgr>();
     Console.WriteLine($"[NetTCP - Server - {serverInfoMgr.Name}] Ping received from {connection.RemoteIpAddress} with timestamp {request.Timestamp}.");
-    Thread.Sleep(1000);
+    Thread.Sleep(1000); //dont do this
     connection.EnqueuePacketSend(new SmPong {
       Timestamp = request.Timestamp + 1
     });

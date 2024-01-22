@@ -12,7 +12,7 @@ public static class PongHandler
   [PacketHandler(OpCodes.SMPong)]
   public static void HandlePing(NetTcpClient client, SmPong request, ILifetimeScope scope) {
     Console.WriteLine($"[NetTCP - Client] Pong received from server with timestamp {request.Timestamp}.");
-    Thread.Sleep(1000);
+    Thread.Sleep(1000);//dont do this
     client.EnqueuePacketSend(new CmPing {
       Timestamp = request.Timestamp + 1
     });

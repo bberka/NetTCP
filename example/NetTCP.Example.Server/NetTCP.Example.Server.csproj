@@ -12,8 +12,4 @@
     <ProjectReference Include="..\NetTCP.Example.Shared\NetTCP.Example.Shared.csproj"/>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Network\Message\"/>
-  </ItemGroup>
-
 </Project>

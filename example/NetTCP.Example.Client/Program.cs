@@ -8,7 +8,7 @@ builder.RegisterPacketsFromAssembly(typeof(OpCodes).Assembly);
 
 var client = builder.Build("127.0.0.1", 8080);
 
-//REGISTER EVENTS
+//Register events here (not implemented yet)
 
 client.Connect();
 
