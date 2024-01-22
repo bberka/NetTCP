@@ -4,7 +4,19 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.0.0-dev1</Version>
+    <Version>1.0.0-beta1</Version>
+
+    <Title>NetTCP</Title>
+    <Description>Simple TCPListener and TCPClient wrapper for .NET 6+. Provides easy access to events and messages/op codes and handlers</Description>
+    <PackageProjectUrl>https://github.com/bberka/NetTCP</PackageProjectUrl>
+    <RepositoryType>https://github.com/bberka/NetTCP</RepositoryType>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    
+    
+    
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,4 +24,14 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 </Project>
