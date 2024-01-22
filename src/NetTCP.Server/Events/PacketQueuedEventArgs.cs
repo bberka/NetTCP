@@ -2,7 +2,7 @@
 
 public class PacketQueuedEventArgs
 {
-  public PacketQueuedEventArgs(NetTcpConnection connection, int messageId, bool encrypted) {
+  internal PacketQueuedEventArgs(NetTcpConnection connection, int messageId, bool encrypted) {
     Connection = connection;
     MessageId = messageId;
     Encrypted = encrypted;

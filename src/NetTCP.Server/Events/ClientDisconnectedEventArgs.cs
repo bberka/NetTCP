@@ -2,13 +2,11 @@
 
 public class ClientDisconnectedEventArgs
 {
-  public ClientDisconnectedEventArgs(NetTcpConnection connection) {
+  internal ClientDisconnectedEventArgs(NetTcpConnection connection, Reason reason) {
     Connection = connection;
+    Reason = reason;
   }
 
   public NetTcpConnection Connection { get; }
-
-  public static ClientDisconnectedEventArgs Create(NetTcpConnection connection) {
-    return new ClientDisconnectedEventArgs(connection);
-  }
+  public Reason Reason { get; }
 }

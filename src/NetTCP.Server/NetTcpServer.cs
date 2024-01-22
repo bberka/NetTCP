@@ -8,21 +8,9 @@ namespace NetTCP.Server;
 
 public class NetTcpServer
 {
-  private readonly ISerializer _serializer;
-  protected readonly NetTcpServerPacketContainer PacketContainer;
+  protected ISerializer Serializer { get; }
+  protected NetTcpServerPacketContainer PacketContainer { get; }
 
-  internal NetTcpServer(IPAddress ipAddress, ushort port, NetTcpServerPacketContainer packetContainer, ISerializer serializer) {
-    PacketContainer = packetContainer;
-    _serializer = serializer;
-    ListenIpAddress = ipAddress;
-    Port = port;
-    //TODO SET SOCKET OPTION
-    Listener = new TcpListener(ListenIpAddress, port);
-    ServerCancellationTokenSource = new CancellationTokenSource();
-    Connections = new ConcurrentBag<NetTcpConnection>();
-    _ = Task.Run(HandleConnectionTimeouts,
-                 ServerCancellationTokenSource.Token);
-  }
 
   protected IPAddress ListenIpAddress { get; }
   public ushort Port { get; }
@@ -51,6 +39,20 @@ public class NetTcpServer
   public event EventHandler<PacketQueuedEventArgs> PacketQueued;
   public event EventHandler<PacketReceivedEventArgs> PacketReceived;
 
+
+  internal NetTcpServer(IPAddress ipAddress, ushort port, NetTcpServerPacketContainer packetContainer, ISerializer serializer) {
+    PacketContainer = packetContainer;
+    Serializer = serializer;
+    ListenIpAddress = ipAddress;
+    Port = port;
+    //TODO SET SOCKET OPTION
+    Listener = new TcpListener(ListenIpAddress, port);
+    ServerCancellationTokenSource = new CancellationTokenSource();
+    Connections = new ConcurrentBag<NetTcpConnection>();
+    _ = Task.Run(HandleConnectionTimeouts,
+                 ServerCancellationTokenSource.Token);
+  }
+
   private async Task HandleConnectionTimeouts() {
     const int timeoutTaskDelay = 10;
     while (ServerCancellationTokenSource.IsCancellationRequested == false) {
@@ -77,7 +79,7 @@ public class NetTcpServer
       await Task.Run(async () => {
                        while (ServerCancellationTokenSource.IsCancellationRequested == false) {
                          var client = await Listener.AcceptTcpClientAsync().ConfigureAwait(false);
-                         var connection = new NetTcpConnection(client, PacketContainer, ServerCancellationTokenSource.Token, _serializer);
+                         var connection = new NetTcpConnection(client, PacketContainer, ServerCancellationTokenSource.Token, Serializer);
                          connection.SubscribeToEvents(this);
                          ClientConnected?.Invoke(this, new ClientConnectedEventArgs(connection));
                          Connections.Add(connection);
@@ -91,11 +93,12 @@ public class NetTcpServer
     }
   }
 
-  public void StopServer() {
+  public void StopServer(Reason reason) {
     Listener.Stop();
     ServerStopped?.Invoke(this, new ServerStoppedEventArgs(this));
     //TODO Wait all handlers to finish
-    foreach (var connection in Connections) connection.DisconnectByServer(DisconnectReason.ServerStopped);
+    foreach (var connection in Connections) 
+      connection.DisconnectByServer(Reason.ServerStopped);
 
     ServerCancellationTokenSource.Cancel();
     ServerCancellationTokenSource.Dispose();
@@ -104,6 +107,7 @@ public class NetTcpServer
 
   public void EnqueueBroadcastPacket(IPacket message,
                                      bool encrypted = false) {
-    foreach (var connection in Connections) connection.EnqueuePacketSend(message, encrypted);
+    foreach (var connection in Connections) 
+      connection.EnqueuePacketSend(message, encrypted);
   }
 }

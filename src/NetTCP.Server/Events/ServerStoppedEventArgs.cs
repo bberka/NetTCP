@@ -2,7 +2,7 @@
 
 public class ServerStoppedEventArgs
 {
-  public ServerStoppedEventArgs(NetTcpServer server) {
+  internal ServerStoppedEventArgs(NetTcpServer server) {
     Server = server;
   }
 

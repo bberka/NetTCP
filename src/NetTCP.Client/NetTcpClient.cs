@@ -2,34 +2,29 @@
 using System.Net.Sockets;
 using System.Text;
 using NetTCP.Abstract;
+using NetTCP.Client.Events;
 using NetTCP.Network;
 
 namespace NetTCP.Client;
 
-public class NetTcpClient
+public class NetTcpClient : IDisposable
 {
-  private readonly ConcurrentQueue<ProcessedIncomingPacket> _incomingPacketQueue = new();
-  private readonly ConcurrentQueue<ProcessedOutgoingPacket> _outgoingPacketQueue = new();
-  private readonly ISerializer _serializer;
-  protected readonly NetTcpClientPacketContainer PacketContainer;
+  public string Host { get; }
+  public ushort Port { get; }
+  protected ConcurrentQueue<ProcessedIncomingPacket> IncomingPacketQueue { get; } = new();
+  protected ConcurrentQueue<ProcessedOutgoingPacket> OutgoingPacketQueue { get; } = new();
+  protected ISerializer Serializer { get; }
+  protected NetTcpClientPacketContainer PacketContainer { get; }
 
 
-  internal NetTcpClient(string host, ushort port, NetTcpClientPacketContainer packetContainer, ISerializer serializer) {
-    Client = new TcpClient(host, port);
-    ClientCancellationTokenSource = new CancellationTokenSource();
-    PacketContainer = packetContainer;
-    _serializer = serializer;
-  }
-
-  public TcpClient Client { get; set; }
-
+  protected TcpClient Client { get; }
   protected CancellationToken ServerCancellationToken { get; }
   protected CancellationTokenSource ClientCancellationTokenSource { get; }
 
   public bool CanProcess => Client.Connected && !ClientCancellationTokenSource.IsCancellationRequested;
-  public bool AnyPacketsProcessing => !(_incomingPacketQueue.IsEmpty && _outgoingPacketQueue.IsEmpty);
+  public bool AnyPacketsProcessing => !(IncomingPacketQueue.IsEmpty && OutgoingPacketQueue.IsEmpty);
 
-  public long LastActivity { get; set; }
+  public long LastActivity { get; private set; }
 
   protected NetworkStream NetworkStream => Client.GetStream();
 
@@ -50,78 +45,132 @@ public class NetTcpClient
   }
 
 
-  public void Connect() {
-    Task.Run(HandleConnectionTask, ClientCancellationTokenSource.Token);
-    Task.Run(OutgoingPacketQueueHandlerTask, ClientCancellationTokenSource.Token);
-    Task.Run(IncomingPacketQueueHandlerTask, ClientCancellationTokenSource.Token);
+  internal NetTcpClient(string host, ushort port, NetTcpClientPacketContainer packetContainer, ISerializer serializer) {
+    Host = host;
+    Port = port;
+    Client = new TcpClient();
+    ClientCancellationTokenSource = new CancellationTokenSource();
+    PacketContainer = packetContainer;
+    Serializer = serializer;
   }
 
-  private async Task OutgoingPacketQueueHandlerTask() {
-    try {
-      while (CanProcess) {
-        var packetExists = _outgoingPacketQueue.TryDequeue(out var packet);
-        if (packetExists) {
+  public event EventHandler<ClientConnectedEventArgs> ClientConnected;
+  public event EventHandler<ConnectionErrorEventArgs> ConnectionError;
+  public event EventHandler<ClientDisconnectedEventArgs> ClientDisconnected;
+  public event EventHandler<UnknownPacketReceivedEventArgs> UnknownPacketReceived;
+  public event EventHandler<UnknownPacketSendAttemptEventArgs> UnknownPacketSendAttempted;
+  public event EventHandler<MessageHandlerNotFoundEventArgs> MessageHandlerNotFound;
+  public event EventHandler<PacketQueuedEventArgs> PacketQueued;
+  public event EventHandler<PacketReceivedEventArgs> PacketReceived;
+
+
+  public void Connect() {
+    Client.Connect(Host, Port);
+    ClientConnected?.Invoke(this, new ClientConnectedEventArgs(this));
+    Task.Run(HandleConnectionTask, ClientCancellationTokenSource.Token);
+    Task.Run(HandleOutgoingPacketQueue, ClientCancellationTokenSource.Token);
+    Task.Run(HandleIncomingPacketQueue, ClientCancellationTokenSource.Token);
+  }
+
+  /// <summary>
+  /// Tries to connect to the server with a retry count and a delay.
+  ///
+  /// If retryCount is 0 it will try to connect indefinitely
+  /// </summary>
+  /// <param name="retryCount"></param>
+  /// <exception cref="Exception"></exception>
+  public void ConnectWithRetry(uint retryCount = 3, int retryDelayMs = 1000) {
+    var retry = 0;
+    while (true) {
+      try {
+        Connect();
+        return;
+      }
+      catch (Exception ex) {
+        retry++;
+        if (retry == retryCount) {
+          ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, Reason.ConnectionFailed));
+          throw new Exception("Could not connect to server", ex);
+        }
+
+        Thread.Sleep(retryDelayMs);
+      }
+    }
+  }
+
+
+  private async Task HandleOutgoingPacketQueue() {
+    while (CanProcess) {
+      var packetExists = OutgoingPacketQueue.TryDequeue(out var packet);
+      if (packetExists) {
+        try {
+          PacketQueued?.Invoke(this, new PacketQueuedEventArgs(this, packet.MessageId, packet.Encrypted));
           BinaryWriter.Write(packet.MessageId);
           BinaryWriter.Write(packet.Encrypted);
           BinaryWriter.Write(packet.Size);
           BinaryWriter.Write(packet.Body);
         }
+        catch (Exception ex) {
+          ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, Reason.PacketSendQueueError));
+          Disconnect(Reason.PacketSendQueueError);
+        }
       }
-    }
-    catch (Exception ex) {
-      // Handle exceptions, log, or notify as needed
     }
   }
 
-  private async Task IncomingPacketQueueHandlerTask() {
-    try {
-      while (CanProcess) {
-        var packetExists = _incomingPacketQueue.TryDequeue(out var packet);
-        if (packetExists)
-          try {
-            PacketContainer.InvokeHandler(packet.MessageId, this, packet.Message);
+  private async Task HandleIncomingPacketQueue() {
+    while (CanProcess) {
+      var packetExists = IncomingPacketQueue.TryDequeue(out var packet);
+      if (packetExists)
+        try {
+          var result =PacketContainer.InvokeHandler(packet.MessageId, this, packet.Message);
+          if (!result) {
+            MessageHandlerNotFound?.Invoke(this, new MessageHandlerNotFoundEventArgs(this, packet));
           }
-          catch (Exception ex) {
-            //TODO ? 
-            Disconnect(DisconnectReason.InvalidPacket);
-          }
-      }
-    }
-    catch (Exception ex) {
-      // Handle exceptions, log, or notify as needed
-      //TODO
+        }
+        catch (Exception ex) {
+          ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, Reason.PacketInvokeHandlerError));
+          Disconnect(Reason.PacketInvokeHandlerError);
+        }
     }
   }
 
   public void EnqueuePacketSend(IPacket message,
                                 bool encrypted = false) {
-    if (!PacketContainer.GetOpcode(message, out var opcode))
-      //invalid message opcode
-      //TODO Trigger event
+    if (!PacketContainer.GetOpcode(message, out var opcode)) {
+      UnknownPacketSendAttempted?.Invoke(this, new UnknownPacketSendAttemptEventArgs(this, message, encrypted));
       return;
-    var bytes = _serializer.Serialize(message);
+    }
+
+    var bytes = Serializer.Serialize(message);
     var packet = new ProcessedOutgoingPacket(opcode, encrypted, bytes);
-    _outgoingPacketQueue.Enqueue(packet);
+    OutgoingPacketQueue.Enqueue(packet);
   }
 
 
   private void HandleReceivePacket(int messageId, bool encrypted, int size, byte[] restBytes) {
     Task.Run(() => {
-      var messageInstance = PacketContainer.GetMessage(messageId);
-      if (messageInstance == null)
-        //invalid message id
-        //TODO Trigger event
-        return;
+      try {
+        var messageInstance = PacketContainer.GetMessage(messageId);
+        if (messageInstance == null) {
+          UnknownPacketReceived?.Invoke(this, new UnknownPacketReceivedEventArgs(this, messageId, encrypted, size, restBytes));
+          return;
+        }
 
-      var data = _serializer.Deserialize(messageInstance, restBytes);
-      var clientPacket = new ProcessedIncomingPacket(messageId, encrypted, (IPacket)data);
-      _incomingPacketQueue.Enqueue(clientPacket);
+        var data = Serializer.Deserialize(messageInstance, restBytes);
+        var clientPacket = new ProcessedIncomingPacket(messageId, encrypted, (IPacket)data);
+        IncomingPacketQueue.Enqueue(clientPacket);
+      }
+      catch (Exception ex) {
+        ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, Reason.PacketReceiveHandleError));
+        Disconnect(Reason.PacketReceiveHandleError);
+      }
     });
   }
 
   private void HandleConnectionTask() {
-    try {
-      while (CanProcess) {
+    while (CanProcess) {
+      try {
         ServerCancellationToken.ThrowIfCancellationRequested();
         LastActivity = DateTime.Now.Ticks;
         var messageId = BinaryReader.ReadInt32();
@@ -131,14 +180,29 @@ public class NetTcpClient
         Console.WriteLine($"Received packet with id {messageId} and size {size} ");
         HandleReceivePacket(messageId, encrypted, size, restBytes);
       }
+      catch (Exception ex) {
+        ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, Reason.NetworkStreamReadError));
+        Disconnect(Reason.NetworkStreamReadError);
+      }
+    }
+
+    Disconnect(Reason.ConnectionClosed);
+  }
+
+  private void Disconnect(Reason reason) {
+    if (!CanProcess) return;
+    try {
+      ClientDisconnected?.Invoke(this, new ClientDisconnectedEventArgs(this, reason)); 
+      Dispose();
     }
     catch (Exception ex) {
-      //TODO Trigger event
-    }
-    finally {
-      Disconnect(DisconnectReason.Unknown);
+      ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, reason));
     }
   }
 
-  private void Disconnect(DisconnectReason unknown) { }
+  public void Dispose() {
+    Client.Dispose();
+    ClientCancellationTokenSource.Dispose();
+    
+  }
 }

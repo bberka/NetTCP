@@ -4,7 +4,7 @@ namespace NetTCP.Server.Events;
 
 public class MessageHandlerNotFoundEventArgs
 {
-  public MessageHandlerNotFoundEventArgs(NetTcpConnection connection, ProcessedIncomingPacket packet) {
+  internal MessageHandlerNotFoundEventArgs(NetTcpConnection connection, ProcessedIncomingPacket packet) {
     Connection = connection;
     Packet = packet;
   }

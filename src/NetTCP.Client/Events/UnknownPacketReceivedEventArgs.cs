@@ -1,16 +1,16 @@
-﻿namespace NetTCP.Server.Events;
+﻿namespace NetTCP.Client.Events;
 
 public class UnknownPacketReceivedEventArgs
 {
-  internal UnknownPacketReceivedEventArgs(NetTcpConnection connection, int messageId, bool encrypted, int size, byte[] packet) {
-    Connection = connection;
+  internal UnknownPacketReceivedEventArgs(NetTcpClient client, int messageId, bool encrypted, int size, byte[] packet) {
+    Client = client;
     MessageId = messageId;
     Encrypted = encrypted;
     Size = size;
     Packet = packet;
   }
 
-  public NetTcpConnection Connection { get; }
+  public NetTcpClient Client { get; }
   public int MessageId { get; }
   public bool Encrypted { get; }
   public int Size { get; }

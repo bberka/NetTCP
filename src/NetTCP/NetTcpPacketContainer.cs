@@ -81,14 +81,6 @@ public abstract class NetTcpPacketContainer<T> where T : class
     Console.WriteLine($"Registered {messageOpcodes.Count} opcodes for packets that will be sent");
     MessageFactories = messageFactories.ToImmutableDictionary();
     OpCodes = messageOpcodes.ToImmutableDictionary();
-
-    // foreach (var factory in MessageFactories) {
-    //   var hasHandler = MessageHandlers.ContainsKey(factory.Key);
-    //   if (!hasHandler) {
-    //     //TODO LOG or TRIGGER EVENT
-    //     // throw new Exception($"Message with opcode {factory.Key} has no handler");
-    //   }
-    // }
   }
 
 
@@ -120,15 +112,17 @@ public abstract class NetTcpPacketContainer<T> where T : class
     return OpCodes.TryGetValue(message.GetType(), out messageId);
   }
 
-  public virtual void InvokeHandler(int messageId, T connection, IPacket packet) {
+  public virtual bool InvokeHandler(int messageId, T connection, IPacket packet) {
     if (!MessageHandlers.TryGetValue(messageId, out var handlerDelegate)) {
-      throw new Exception($"Message with opcode {messageId} has no handler");
-      return;
+      // throw new Exception($"Message with opcode {messageId} has no handler");
+      return false;
     }
 
     using (var scope = Container.BeginLifetimeScope()) {
       handlerDelegate.Invoke(connection, packet, scope);
     }
+
+    return true;
   }
 
   public void InitializeBuild(IContainer container) {

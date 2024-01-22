@@ -2,15 +2,13 @@
 
 public class ConnectionErrorEventArgs
 {
-  public ConnectionErrorEventArgs(NetTcpConnection connection, Exception exception) {
+  internal ConnectionErrorEventArgs(NetTcpConnection connection, Exception exception, Reason reason) {
     Connection = connection;
     Exception = exception;
+    Reason = reason;
   }
 
   public NetTcpConnection Connection { get; }
   public Exception Exception { get; }
-
-  public static ConnectionErrorEventArgs Create(NetTcpConnection connection, Exception exception) {
-    return new ConnectionErrorEventArgs(connection, exception);
-  }
+  public Reason Reason { get; }
 }

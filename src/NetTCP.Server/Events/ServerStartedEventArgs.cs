@@ -2,7 +2,7 @@
 
 public class ServerStartedEventArgs
 {
-  public ServerStartedEventArgs(NetTcpServer server) {
+  internal ServerStartedEventArgs(NetTcpServer server) {
     Server = server;
   }
 

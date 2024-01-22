@@ -2,7 +2,7 @@
 
 public class PacketReceivedEventArgs
 {
-  public PacketReceivedEventArgs(NetTcpConnection connection, int messageId, bool encrypted) {
+  internal PacketReceivedEventArgs(NetTcpConnection connection, int messageId, bool encrypted) {
     Connection = connection;
     MessageId = messageId;
     Encrypted = encrypted;

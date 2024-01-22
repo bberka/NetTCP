@@ -4,7 +4,7 @@ namespace NetTCP.Server.Events;
 
 public class UnknownPacketSendAttemptEventArgs
 {
-  public UnknownPacketSendAttemptEventArgs(NetTcpConnection connection, IPacket message, bool encrypted) {
+  internal UnknownPacketSendAttemptEventArgs(NetTcpConnection connection, IPacket message, bool encrypted) {
     Connection = connection;
     Message = message;
     Encrypted = encrypted;
