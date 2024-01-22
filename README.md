@@ -2,6 +2,10 @@
 Simple TCPListener and TCPClient wrapper for .NET 6+. Provides easy access to events and messages/op codes and handlers
 
 Simple use and support for Autofac DI container and scopes for each message handler instance
+## Warning
+This is a work in progress and not ready for production use. Use at your own risk
+
+If you want to fork and improve or implement missing features, feel free to do so
 
 ## Features
 - [x] TCPListener wrapper as NetTcpServer with NetTcpConnection for each client
