@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
-using Autofac;
 using NetTCP.Abstract;
 using NetTCP.Server.Events;
 
@@ -9,15 +8,32 @@ namespace NetTCP.Server;
 
 public class NetTcpServer
 {
+  private readonly ISerializer _serializer;
   protected readonly NetTcpServerPacketContainer PacketContainer;
+
+  internal NetTcpServer(IPAddress ipAddress, ushort port, NetTcpServerPacketContainer packetContainer, ISerializer serializer) {
+    PacketContainer = packetContainer;
+    _serializer = serializer;
+    ListenIpAddress = ipAddress;
+    Port = port;
+    //TODO SET SOCKET OPTION
+    Listener = new TcpListener(ListenIpAddress, port);
+    ServerCancellationTokenSource = new CancellationTokenSource();
+    Connections = new ConcurrentBag<NetTcpConnection>();
+    _ = Task.Run(HandleConnectionTimeouts,
+                 ServerCancellationTokenSource.Token);
+  }
+
   protected IPAddress ListenIpAddress { get; }
-  protected ushort Port { get; }
+  public ushort Port { get; }
+  public string IpAddress => ListenIpAddress.ToString();
   protected TcpListener Listener { get; }
-  
+
   /// <summary>
-  /// Connection timeout in seconds
+  ///   Connection timeout in seconds
   /// </summary>
   public int ConnectionTimeoutSeconds { get; protected set; } = 60 * 5; // 5 minutes
+
   protected CancellationTokenSource ServerCancellationTokenSource { get; }
   public ConcurrentBag<NetTcpConnection> Connections { get; }
 
@@ -35,36 +51,23 @@ public class NetTcpServer
   public event EventHandler<PacketQueuedEventArgs> PacketQueued;
   public event EventHandler<PacketReceivedEventArgs> PacketReceived;
 
-  internal NetTcpServer(IPAddress ipAddress, ushort port, NetTcpServerPacketContainer packetContainer) {
-    PacketContainer = packetContainer;
-    ListenIpAddress = ipAddress;
-    Port = port;
-    //TODO SET SOCKET OPTION
-    Listener = new TcpListener(ListenIpAddress, port);
-    ServerCancellationTokenSource = new CancellationTokenSource();
-    Connections = new ConcurrentBag<NetTcpConnection>();
-    _ = Task.Run(HandleConnectionTimeouts,
-                 ServerCancellationTokenSource.Token);
-  }
-
   private async Task HandleConnectionTimeouts() {
     const int timeoutTaskDelay = 10;
     while (ServerCancellationTokenSource.IsCancellationRequested == false) {
       await Task.Delay(TimeSpan.FromSeconds(timeoutTaskDelay)).ConfigureAwait(false);
       var tempConnections = new List<NetTcpConnection>(Connections.Count);
       while (Connections.TryTake(out var connection)) tempConnections.Add(connection);
-      foreach (var tcpConnection in tempConnections) {
+      foreach (var tcpConnection in tempConnections)
         if (tcpConnection.LastActivity + ConnectionTimeoutSeconds * 1000 < Environment.TickCount64)
           tcpConnection.DisconnectByServer();
         else
           Connections.Add(tcpConnection);
-      }
     }
   }
 
 
   /// <summary>
-  /// Starts listening and handling for incoming connections
+  ///   Starts listening and handling for incoming connections
   /// </summary>
   /// <param name="blockThread">Whether the listener will block created thread</param>
   public async Task StartServerAsync() {
@@ -74,7 +77,7 @@ public class NetTcpServer
       await Task.Run(async () => {
                        while (ServerCancellationTokenSource.IsCancellationRequested == false) {
                          var client = await Listener.AcceptTcpClientAsync().ConfigureAwait(false);
-                         var connection = new NetTcpConnection(client, PacketContainer, ServerCancellationTokenSource.Token);
+                         var connection = new NetTcpConnection(client, PacketContainer, ServerCancellationTokenSource.Token, _serializer);
                          connection.SubscribeToEvents(this);
                          ClientConnected?.Invoke(this, new ClientConnectedEventArgs(connection));
                          Connections.Add(connection);
@@ -92,19 +95,15 @@ public class NetTcpServer
     Listener.Stop();
     ServerStopped?.Invoke(this, new ServerStoppedEventArgs(this));
     //TODO Wait all handlers to finish
-    foreach (var connection in Connections) {
-      connection.DisconnectByServer(DisconnectReason.ServerStopped);
-    }
+    foreach (var connection in Connections) connection.DisconnectByServer(DisconnectReason.ServerStopped);
 
     ServerCancellationTokenSource.Cancel();
     ServerCancellationTokenSource.Dispose();
     Listener.Server.Dispose();
   }
 
-  public void EnqueueBroadcastPacket(IWriteablePacket message,
+  public void EnqueueBroadcastPacket(IPacket message,
                                      bool encrypted = false) {
-    foreach (var connection in Connections) {
-      connection.EnqueuePacketSend(message, encrypted);
-    }
+    foreach (var connection in Connections) connection.EnqueuePacketSend(message, encrypted);
   }
 }

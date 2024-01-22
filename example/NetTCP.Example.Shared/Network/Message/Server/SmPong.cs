@@ -1,10 +1,10 @@
-﻿using NetTCP.Attributes;
+﻿using NetTCP.Abstract;
+using NetTCP.Attributes;
 
 namespace NetTCP.Example.Shared.Network.Message.Server;
 
 [Packet(OpCodes.SMPong)]
-public abstract class BaseSmPong 
+public sealed class SmPong : IPacket
 {
   public long Timestamp { get; set; } = 0;
-
 }

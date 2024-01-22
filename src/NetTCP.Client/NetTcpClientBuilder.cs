@@ -1,17 +1,17 @@
-﻿namespace NetTCP.Client;
-
-
-
-using System.Net;
+﻿using System.Net;
 using System.Reflection;
 using Autofac;
 using Autofac.Core;
+using NetTCP.Abstract;
 
+namespace NetTCP.Client;
 
 public class NetTcpClientBuilder
 {
-  private ContainerBuilder _containerBuilder;
-  private NetTcpClientPacketContainer _packetContainer;
+  private readonly ContainerBuilder _containerBuilder;
+  private readonly NetTcpClientPacketContainer _packetContainer;
+
+  private ISerializer _serializer = new JsonSerializer();
 
   private NetTcpClientBuilder() {
     _containerBuilder = new ContainerBuilder();
@@ -20,12 +20,17 @@ public class NetTcpClientBuilder
 
 
   /// <summary>
-  /// Creates a new instance of <see cref="NetTcpServerBuilder"/> with default settings.
-  /// It will register all packets from the entry assembly.
+  ///   Creates a new instance of <see cref="NetTcpServerBuilder" /> with default settings.
+  ///   It will register all packets from the entry assembly.
   /// </summary>
   /// <returns></returns>
   public static NetTcpClientBuilder Create() {
-   return new NetTcpClientBuilder();
+    return new NetTcpClientBuilder();
+  }
+
+  public NetTcpClientBuilder UseSerializer(ISerializer serializer) {
+    _serializer = serializer;
+    return this;
   }
 
   public NetTcpClientBuilder RegisterSingleton<TService, TImplementation>() where TImplementation : TService {
@@ -94,10 +99,11 @@ public class NetTcpClientBuilder
   }
 
   /// <summary>
-  /// This method can only be called once.
-  /// It will register all packets and packet handlers from the given assembly.
-  /// You do not need to provide an assembly if you want to register all packets from the entry assembly.
-  /// If you provide an assembly that is different than entry assembly it will register all packets from the entry assembly and the given assembly.
+  ///   This method can only be called once.
+  ///   It will register all packets and packet handlers from the given assembly.
+  ///   You do not need to provide an assembly if you want to register all packets from the entry assembly.
+  ///   If you provide an assembly that is different than entry assembly it will register all packets from the entry assembly
+  ///   and the given assembly.
   /// </summary>
   /// <param name="assembly"></param>
   /// <returns></returns>
@@ -107,10 +113,6 @@ public class NetTcpClientBuilder
   }
 
   public NetTcpClient Build(string host, ushort port) {
-    if (!_packetContainer.IsRegistered()) {
-      _packetContainer.Register();
-    }
-
     var parseIp = IPAddress.TryParse(host, out var ipAddress);
     if (parseIp == false)
       throw new ArgumentException("Invalid ip address: " + host, nameof(host));
@@ -118,8 +120,8 @@ public class NetTcpClientBuilder
     if (isValidPort == false)
       throw new ArgumentException("Invalid port: " + port, nameof(port));
     var container = _containerBuilder.Build();
-    _packetContainer.InitDependencyContainer(container);
-    var server = new NetTcpClient(host, port, _packetContainer);
+    _packetContainer.InitializeBuild(container);
+    var server = new NetTcpClient(host, port, _packetContainer, _serializer);
     return server;
   }
 }

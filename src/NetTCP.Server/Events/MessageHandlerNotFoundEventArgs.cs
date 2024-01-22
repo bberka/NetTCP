@@ -1,18 +1,14 @@
-﻿using NetTCP.Server.Model;
+﻿using NetTCP.Network;
 
 namespace NetTCP.Server.Events;
 
 public class MessageHandlerNotFoundEventArgs
 {
-  public NetTcpConnection Connection { get; }
-  public ProcessedClientPacket Packet { get; }
-
-  public MessageHandlerNotFoundEventArgs(NetTcpConnection connection, ProcessedClientPacket packet) {
+  public MessageHandlerNotFoundEventArgs(NetTcpConnection connection, ProcessedIncomingPacket packet) {
     Connection = connection;
     Packet = packet;
   }
 
-
-  
-
+  public NetTcpConnection Connection { get; }
+  public ProcessedIncomingPacket Packet { get; }
 }

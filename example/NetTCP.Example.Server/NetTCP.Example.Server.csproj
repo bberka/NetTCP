@@ -8,8 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\NetTCP.Server\NetTCP.Server.csproj" />
-    <ProjectReference Include="..\NetTCP.Example.Shared\NetTCP.Example.Shared.csproj" />
+    <ProjectReference Include="..\..\src\NetTCP.Server\NetTCP.Server.csproj"/>
+    <ProjectReference Include="..\NetTCP.Example.Shared\NetTCP.Example.Shared.csproj"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Network\Message\"/>
   </ItemGroup>
 
 </Project>

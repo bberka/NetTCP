@@ -1,11 +1,8 @@
 ﻿namespace NetTCP.Attributes;
 
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Class)]
 public class PacketAttribute : Attribute
 {
-  public int MessageId { get; }
-
-  public bool Encrypted { get; set; } = false;
   public PacketAttribute(int messageId) {
     MessageId = messageId;
   }
@@ -16,4 +13,8 @@ public class PacketAttribute : Attribute
     var asInt = Convert.ToInt32(@enum);
     MessageId = asInt;
   }
+
+  public int MessageId { get; }
+
+  public bool Encrypted { get; set; } = false;
 }

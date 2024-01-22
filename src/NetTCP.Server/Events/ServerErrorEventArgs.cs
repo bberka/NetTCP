@@ -9,8 +9,8 @@ public class ServerErrorEventArgs
 
   public NetTcpServer Server { get; }
   public Exception Exception { get; }
-  
+
   public static ServerErrorEventArgs Create(NetTcpServer server, Exception exception) {
-    return new(server, exception);
+    return new ServerErrorEventArgs(server, exception);
   }
 }
