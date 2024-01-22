@@ -11,24 +11,29 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ef9cb972-53e3-4ee9-bb2f-e94341f1b336" name="Changes" comment="init">
-      <change afterPath="$PROJECT_DIR$/.idea/.idea.EasTCP/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="ef9cb972-53e3-4ee9-bb2f-e94341f1b336" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/example/NetTCP.Example.Server/Abstract/IServerInfoMgr.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/example/NetTCP.Example.Server/Concrete/ServerInfoMgr.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.EasTCP/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.EasTCP/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/example/NetTCP.Example.Server/Network/Message/Handler/PingHandler.cs" beforeDir="false" afterPath="$PROJECT_DIR$/example/NetTCP.Example.Server/Network/Message/Handler/PingHandler.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/example/NetTCP.Example.Server/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/example/NetTCP.Example.Server/Program.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/EasTcpConnection.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/NetTcpConnection.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/EasTcpServer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/NetTcpServer.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/Events/ClientConnectedEventArgs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/Events/ClientConnectedEventArgs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/Events/ClientDisconnectedEventArgs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/Events/ClientDisconnectedEventArgs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/Events/ConnectionErrorEventArgs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/Events/ConnectionErrorEventArgs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/Events/MessageHandlerNotFoundEventArgs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/Events/MessageHandlerNotFoundEventArgs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/Events/PacketQueuedEventArgs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/Events/PacketQueuedEventArgs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/Events/PacketReceivedEventArgs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/Events/PacketReceivedEventArgs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/Events/ServerErrorEventArgs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/Events/ServerErrorEventArgs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/Events/ServerStartedEventArgs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/Events/ServerStartedEventArgs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/Events/ServerStoppedEventArgs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/Events/ServerStoppedEventArgs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/Events/UnknownPacketReceivedEventArgs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/Events/UnknownPacketReceivedEventArgs.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/example/NetTCP.Example.Shared/Network/Packets/Client/CMPing.cs" beforeDir="false" afterPath="$PROJECT_DIR$/example/NetTCP.Example.Shared/Network/Packets/Client/CMPing.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/example/NetTCP.Example.Shared/Network/Packets/Server/SMPong.cs" beforeDir="false" afterPath="$PROJECT_DIR$/example/NetTCP.Example.Shared/Network/Packets/Server/SMPong.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP.Client/ClientPacketTable.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Client/ClientPacketTable.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP.Client/Model/ProcessedClientPacket.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Client/Model/ProcessedClientPacket.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP.Client/Model/ProcessedServerPacket.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Client/Model/ProcessedServerPacket.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP.Client/NetTcpClient.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Client/NetTcpClient.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/Events/UnknownPacketSendAttemptEventArgs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/Events/UnknownPacketSendAttemptEventArgs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/ServerPacketTable.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/ServerPacketTable.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/Model/ProcessedClientPacket.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/Model/ProcessedClientPacket.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/Model/ProcessedServerPacket.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/Model/ProcessedServerPacket.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/NetServerPacketContainer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/NetServerPacketContainer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/NetTcpConnection.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/NetTcpConnection.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/NetTcpServer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/NetTcpServer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP.Server/NetTcpServerBuilder.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP.Server/NetTcpServerBuilder.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP/Abstract/IPacketReadable.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP/Abstract/IReadablePacket.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP/Abstract/IPacketWriteable.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP/Abstract/IWriteablePacket.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP/Serialization/PacketReader.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP/Serialization/PacketReader.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/NetTCP/Serialization/PacketWriter.cs" beforeDir="false" afterPath="$PROJECT_DIR$/src/NetTCP/Serialization/PacketWriter.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,6 +54,7 @@
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/902c7234ac8172b6a14385988189f4d260e1831f5f3f40c681be9de3dd842c40/Thread.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/c6c22e897169c8836caca1070e0f86ae0c748f520e9eb8fa0c23d34387799d5/BinaryReader.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock://C:/Users/kkass/source/repos/EasTCP/src/NetTCP.Server/Events/ClientConnectedEventArgs.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/kkass/source/repos/EasTCP/src/NetTCP.Server/Events/ClientConnectedEventArgs.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="ProjectColorInfo">{
@@ -65,13 +71,14 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     ".NET Project.EasTCP.Example.Client.executor": "Debug",
+    ".NET Project.EasTCP.Example.Server.executor": "Debug",
     ".NET Project.EasTCP.Example.executor": "Debug",
     "ASKED_ADD_EXTERNAL_FILES": "true",
     "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "master",
+    "git-widget-placeholder": "dev/DI",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -88,7 +95,7 @@
     ]
   }
 }]]></component>
-  <component name="RunManager" selected=".NET Project.EasTCP.Example.Client">
+  <component name="RunManager" selected=".NET Project.EasTCP.Example.Server">
     <configuration name="EasTCP.Example" type="DotNetProject" factoryName=".NET Project">
       <option name="EXE_PATH" value="" />
       <option name="PROGRAM_PARAMETERS" value="" />
@@ -192,7 +199,7 @@
       <workItem from="1704645269586" duration="14771000" />
       <workItem from="1704761736742" duration="279000" />
       <workItem from="1705096966146" duration="1218000" />
-      <workItem from="1705247412196" duration="2151000" />
+      <workItem from="1705247412196" duration="12950000" />
     </task>
     <task id="LOCAL-00001" summary="init">
       <option name="closed" value="true" />
@@ -218,7 +225,23 @@
       <option name="project" value="LOCAL" />
       <updated>1705258031778</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="renaming">
+      <option name="closed" value="true" />
+      <created>1705258132370</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1705258132370</updated>
+    </task>
+    <task id="LOCAL-00005" summary="NetTcpServer.cs&#10;NetTcpServerBuilder.cs&#10;NetServerPacketContainer.cs&#10;are updated and fixed&#10;Now NetTcpServer handlers supports service initialization">
+      <option name="closed" value="true" />
+      <created>1705283838643</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1705283838643</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -230,7 +253,9 @@
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
     <MESSAGE value="rename" />
     <MESSAGE value="init" />
-    <option name="LAST_COMMIT_MESSAGE" value="init" />
+    <MESSAGE value="renaming" />
+    <MESSAGE value="NetTcpServer.cs&#10;NetTcpServerBuilder.cs&#10;NetServerPacketContainer.cs&#10;are updated and fixed&#10;Now NetTcpServer handlers supports service initialization" />
+    <option name="LAST_COMMIT_MESSAGE" value="NetTcpServer.cs&#10;NetTcpServerBuilder.cs&#10;NetServerPacketContainer.cs&#10;are updated and fixed&#10;Now NetTcpServer handlers supports service initialization" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -246,6 +271,32 @@
           <line>14</line>
           <properties documentPath="C:\Users\kkass\source\repos\EasTCP\src\EasTCP.Example.Client\Network\Message\Handler\PongHandler.cs" initialLine="14" containingFunctionPresentation="Method 'HandlePing'" />
           <option name="timeStamp" value="11" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DotNet Breakpoints">
+          <url>file://$PROJECT_DIR$/src/NetTCP.Server/NetTcpServer.cs</url>
+          <line>38</line>
+          <properties documentPath="C:\Users\kkass\source\repos\EasTCP\src\NetTCP.Server\NetTcpServer.cs" initialLine="38" containingFunctionPresentation="Constructor 'NetTcpServer'">
+            <startOffsets>
+              <option value="1710" />
+            </startOffsets>
+            <endOffsets>
+              <option value="1744" />
+            </endOffsets>
+          </properties>
+          <option name="timeStamp" value="12" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DotNet Breakpoints">
+          <url>file://$PROJECT_DIR$/src/NetTCP.Server/NetServerPacketContainer.cs</url>
+          <line>97</line>
+          <properties documentPath="C:\Users\kkass\source\repos\EasTCP\src\NetTCP.Server\NetServerPacketContainer.cs" initialLine="89" containingFunctionPresentation="Method 'RegisterMessages'">
+            <startOffsets>
+              <option value="3312" />
+            </startOffsets>
+            <endOffsets>
+              <option value="3313" />
+            </endOffsets>
+          </properties>
+          <option name="timeStamp" value="28" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

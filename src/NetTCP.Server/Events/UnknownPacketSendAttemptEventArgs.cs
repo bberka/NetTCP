@@ -1,16 +1,16 @@
-﻿
-using NetTCP.Abstract;
+﻿using NetTCP.Abstract;
 
 namespace NetTCP.Server.Events;
 
 public class UnknownPacketSendAttemptEventArgs
 {
-  public UnknownPacketSendAttemptEventArgs(NetTcpConnection connection, IPacketWriteable message, bool encrypted) {
+  public UnknownPacketSendAttemptEventArgs(NetTcpConnection connection, IPacket message, bool encrypted) {
     Connection = connection;
     Message = message;
     Encrypted = encrypted;
   }
-  public NetTcpConnection Connection { get;  }
-  public IPacketWriteable Message { get; }
+
+  public NetTcpConnection Connection { get; }
+  public IPacket Message { get; }
   public bool Encrypted { get; }
 }

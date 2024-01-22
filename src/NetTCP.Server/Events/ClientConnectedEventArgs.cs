@@ -2,13 +2,13 @@
 
 public class ClientConnectedEventArgs
 {
-  public NetTcpConnection Connection { get;  }
-
   public ClientConnectedEventArgs(NetTcpConnection connection) {
     Connection = connection;
   }
 
+  public NetTcpConnection Connection { get; }
+
   public static ClientConnectedEventArgs Create(NetTcpConnection connection) {
-    return new(connection);
+    return new ClientConnectedEventArgs(connection);
   }
 }

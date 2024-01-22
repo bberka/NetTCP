@@ -7,10 +7,8 @@ public class ClientDisconnectedEventArgs
   }
 
   public NetTcpConnection Connection { get; }
-  
+
   public static ClientDisconnectedEventArgs Create(NetTcpConnection connection) {
-    return new(connection);
+    return new ClientDisconnectedEventArgs(connection);
   }
-  
-   
 }

@@ -7,6 +7,4 @@ public class ServerStoppedEventArgs
   }
 
   public NetTcpServer Server { get; }
-  
-   
 }

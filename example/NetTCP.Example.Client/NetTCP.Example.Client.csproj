@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\NetTCP.Client\NetTCP.Client.csproj" />
-    <ProjectReference Include="..\..\src\NetTCP\NetTCP.csproj" />
-    <ProjectReference Include="..\NetTCP.Example.Shared\NetTCP.Example.Shared.csproj" />
+    <ProjectReference Include="..\..\src\NetTCP.Client\NetTCP.Client.csproj"/>
+    <ProjectReference Include="..\..\src\NetTCP\NetTCP.csproj"/>
+    <ProjectReference Include="..\NetTCP.Example.Shared\NetTCP.Example.Shared.csproj"/>
   </ItemGroup>
 
 </Project>

@@ -3,6 +3,5 @@
 public enum PacketDirection : byte
 {
   Request,
-  Response,
-   
+  Response
 }

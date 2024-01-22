@@ -8,10 +8,32 @@ namespace NetTCP.Server;
 
 public class NetTcpServer
 {
+  private readonly ISerializer _serializer;
+  protected readonly NetTcpServerPacketContainer PacketContainer;
+
+  internal NetTcpServer(IPAddress ipAddress, ushort port, NetTcpServerPacketContainer packetContainer, ISerializer serializer) {
+    PacketContainer = packetContainer;
+    _serializer = serializer;
+    ListenIpAddress = ipAddress;
+    Port = port;
+    //TODO SET SOCKET OPTION
+    Listener = new TcpListener(ListenIpAddress, port);
+    ServerCancellationTokenSource = new CancellationTokenSource();
+    Connections = new ConcurrentBag<NetTcpConnection>();
+    _ = Task.Run(HandleConnectionTimeouts,
+                 ServerCancellationTokenSource.Token);
+  }
+
   protected IPAddress ListenIpAddress { get; }
-  protected ushort Port { get; }
+  public ushort Port { get; }
+  public string IpAddress => ListenIpAddress.ToString();
   protected TcpListener Listener { get; }
-  public int ConnectionTimeout { get; protected set; }
+
+  /// <summary>
+  ///   Connection timeout in seconds
+  /// </summary>
+  public int ConnectionTimeoutSeconds { get; protected set; } = 60 * 5; // 5 minutes
+
   protected CancellationTokenSource ServerCancellationTokenSource { get; }
   public ConcurrentBag<NetTcpConnection> Connections { get; }
 
@@ -28,55 +50,40 @@ public class NetTcpServer
   public event EventHandler<MessageHandlerNotFoundEventArgs> MessageHandlerNotFound;
   public event EventHandler<PacketQueuedEventArgs> PacketQueued;
   public event EventHandler<PacketReceivedEventArgs> PacketReceived;
-  public NetTcpServer(string listenAddress, ushort port) {
-    ListenIpAddress = IPAddress.Parse(listenAddress);
-    Port = port;
-    //TODO SET SOCKET OPTION
-    Listener = new TcpListener(ListenIpAddress, port);
-    ServerCancellationTokenSource = new CancellationTokenSource();
-    Connections = new ConcurrentBag<NetTcpConnection>();
-    _ = Task.Run(HandleConnectionTimeouts,
-                 ServerCancellationTokenSource.Token);
-  }
 
   private async Task HandleConnectionTimeouts() {
     const int timeoutTaskDelay = 10;
-    while (true) {
+    while (ServerCancellationTokenSource.IsCancellationRequested == false) {
       await Task.Delay(TimeSpan.FromSeconds(timeoutTaskDelay)).ConfigureAwait(false);
       var tempConnections = new List<NetTcpConnection>(Connections.Count);
       while (Connections.TryTake(out var connection)) tempConnections.Add(connection);
-      foreach (var tcpConnection in tempConnections) {
-        if (tcpConnection.LastActivity + ConnectionTimeout < Environment.TickCount64)
+      foreach (var tcpConnection in tempConnections)
+        if (tcpConnection.LastActivity + ConnectionTimeoutSeconds * 1000 < Environment.TickCount64)
           tcpConnection.DisconnectByServer();
         else
           Connections.Add(tcpConnection);
-      }
     }
   }
 
-  private void StartAcceptConnections(bool blockThread) {
-    var connectionHandlerTask = Task.Run(async () => {
-                                           while (true) {
-                                             var client = await Listener.AcceptTcpClientAsync().ConfigureAwait(false);
-                                             var connection = new NetTcpConnection(client, ServerCancellationTokenSource.Token);
-                                             connection.SubscribeToEvents(this);
-                                             ClientConnected?.Invoke(this, new ClientConnectedEventArgs(connection));
-                                             Connections.Add(connection);
-                                           }
-                                         },
-                                         ServerCancellationTokenSource.Token);
-    if (blockThread) connectionHandlerTask.Wait();
-  }
 
   /// <summary>
-  /// Starts listening and handling for incoming connections
+  ///   Starts listening and handling for incoming connections
   /// </summary>
   /// <param name="blockThread">Whether the listener will block created thread</param>
-  public void StartServer(bool blockThread = false) {
+  public async Task StartServerAsync() {
     try {
       Listener.Start();
       ServerStarted?.Invoke(this, new ServerStartedEventArgs(this));
-      StartAcceptConnections(blockThread);
+      await Task.Run(async () => {
+                       while (ServerCancellationTokenSource.IsCancellationRequested == false) {
+                         var client = await Listener.AcceptTcpClientAsync().ConfigureAwait(false);
+                         var connection = new NetTcpConnection(client, PacketContainer, ServerCancellationTokenSource.Token, _serializer);
+                         connection.SubscribeToEvents(this);
+                         ClientConnected?.Invoke(this, new ClientConnectedEventArgs(connection));
+                         Connections.Add(connection);
+                       }
+                     },
+                     ServerCancellationTokenSource.Token);
     }
     catch (Exception ex) {
       ServerError?.Invoke(this, new ServerErrorEventArgs(this, ex));
@@ -85,23 +92,18 @@ public class NetTcpServer
   }
 
   public void StopServer() {
-    //Stop listening new connections
     Listener.Stop();
     ServerStopped?.Invoke(this, new ServerStoppedEventArgs(this));
     //TODO Wait all handlers to finish
-    foreach (var connection in Connections) {
-      connection.DisconnectByServer(DisconnectReason.ServerStopped);
-    }
+    foreach (var connection in Connections) connection.DisconnectByServer(DisconnectReason.ServerStopped);
 
     ServerCancellationTokenSource.Cancel();
     ServerCancellationTokenSource.Dispose();
     Listener.Server.Dispose();
   }
 
-  public void EnqueueBroadcastPacket(IPacketWriteable message,
+  public void EnqueueBroadcastPacket(IPacket message,
                                      bool encrypted = false) {
-    foreach (var connection in Connections) {
-      connection.EnqueuePacketSend(message, encrypted);
-    }
+    foreach (var connection in Connections) connection.EnqueuePacketSend(message, encrypted);
   }
 }

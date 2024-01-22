@@ -9,8 +9,8 @@ public class ConnectionErrorEventArgs
 
   public NetTcpConnection Connection { get; }
   public Exception Exception { get; }
-  
+
   public static ConnectionErrorEventArgs Create(NetTcpConnection connection, Exception exception) {
-    return new(connection, exception);
+    return new ConnectionErrorEventArgs(connection, exception);
   }
 }
