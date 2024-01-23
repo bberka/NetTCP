@@ -71,7 +71,6 @@ public abstract class NetTcpPacketContainer<T> where T : class
     }
 
     MessageHandlers = messageHandlers.ToImmutableDictionary();
-    Console.WriteLine($"Registered {messageHandlers.Count} message handlers to handle received packets");
 
 
     var messageFactories = new Dictionary<int, MessageFactoryDelegate>();
@@ -96,8 +95,6 @@ public abstract class NetTcpPacketContainer<T> where T : class
       }
     }
 
-    Console.WriteLine($"Registered {messageFactories.Count} message factories to read received packets");
-    Console.WriteLine($"Registered {messageOpcodes.Count} opcodes for packets that will be sent");
     MessageFactories = messageFactories.ToImmutableDictionary();
     OpCodes = messageOpcodes.ToImmutableDictionary();
   }

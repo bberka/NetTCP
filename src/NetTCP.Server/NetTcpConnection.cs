@@ -10,12 +10,10 @@ namespace NetTCP.Server;
 
 public class NetTcpConnection : IDisposable
 {
+  private readonly NetTcpServer _server;
   private bool Disposing = false;
   protected ConcurrentQueue<ProcessedIncomingPacket> IncomingPacketQueue { get; } = new();
   protected ConcurrentQueue<ProcessedOutgoingPacket> OutgoingPacketQueue { get; } = new();
-  protected ISerializer Serializer { get; }
-  protected NetTcpServerPacketContainer PacketContainer { get; }
-
 
   protected TcpClient Client { get; }
   protected CancellationToken ServerCancellationToken { get; }
@@ -50,9 +48,8 @@ public class NetTcpConnection : IDisposable
   public IPAddress RemoteIpAddress { get; set; }
 
 
-  public NetTcpConnection(TcpClient client, NetTcpServerPacketContainer packetContainer, CancellationToken serverCancellationToken, ISerializer serializer) {
-    PacketContainer = packetContainer;
-    Serializer = serializer;
+  public NetTcpConnection(TcpClient client, NetTcpServer server, CancellationToken serverCancellationToken) {
+    _server = server;
     Client = client;
     ServerCancellationToken = serverCancellationToken;
     ClientCancellationTokenSource = new CancellationTokenSource();
@@ -64,24 +61,6 @@ public class NetTcpConnection : IDisposable
     _ = Task.Run(HandleIncomingPacketQueue, ClientCancellationTokenSource.Token);
     _ = Task.Run(HandleOutgoingPacketQueue, ClientCancellationTokenSource.Token);
   }
-
-  public event EventHandler<ConnectionErrorEventArgs> ConnectionError;
-  public event EventHandler<ClientDisconnectedEventArgs> ClientDisconnected;
-  public event EventHandler<UnknownPacketReceivedEventArgs> UnknownPacketReceived;
-  public event EventHandler<UnknownPacketSendAttemptEventArgs> UnknownPacketSendAttempted;
-  public event EventHandler<MessageHandlerNotFoundEventArgs> MessageHandlerNotFound;
-  public event EventHandler<PacketQueuedEventArgs> PacketQueued;
-  public event EventHandler<PacketReceivedEventArgs> PacketReceived;
-
-  // internal void SubscribeToEvents(NetTcpServer netTcpServer) {
-  //   netTcpServer.ConnectionError += ConnectionError;
-  //   netTcpServer.ClientDisconnected += ClientDisconnected;
-  //   netTcpServer.UnknownPacketReceived += UnknownPacketReceived;
-  //   netTcpServer.UnknownPacketSendAttempted += UnknownPacketSendAttempted;
-  //   netTcpServer.MessageHandlerNotFound += MessageHandlerNotFound;
-  //   netTcpServer.PacketQueued += PacketQueued;
-  //   netTcpServer.PacketReceived += PacketReceived;
-  // }
 
 
   private void HandleOutgoingPacketQueue() {
@@ -95,7 +74,7 @@ public class NetTcpConnection : IDisposable
           BinaryWriter.Write(packet.Body);
         }
         catch (Exception ex) {
-          ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, Reason.PacketSendQueueError));
+          _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, ex, Reason.PacketSendQueueError));
           DisconnectByServer(Reason.PacketSendQueueError);
         }
     }
@@ -106,13 +85,13 @@ public class NetTcpConnection : IDisposable
       var packetExists = IncomingPacketQueue.TryDequeue(out var packet);
       if (packetExists)
         try {
-          var result = PacketContainer.InvokeHandler(packet.MessageId, this, packet.Message);
+          var result = _server.PacketContainer.InvokeHandler(packet.MessageId, this, packet.Message);
           if (result == false) {
-            MessageHandlerNotFound?.Invoke(this, new MessageHandlerNotFoundEventArgs(this, packet));
+            _server.InvokeMessageHandlerNotFound(new MessageHandlerNotFoundEventArgs(this, packet));
           }
         }
         catch (Exception ex) {
-          ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, Reason.PacketInvokeHandlerError));
+          _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, ex, Reason.PacketInvokeHandlerError));
           DisconnectByServer(Reason.PacketInvokeHandlerError);
         }
     }
@@ -128,21 +107,23 @@ public class NetTcpConnection : IDisposable
   public void DisconnectByServer(Reason reason = Reason.Unknown) {
     if (!CanProcess) return;
     try {
+      _server.InvokeClientDisconnected(new ClientDisconnectedEventArgs(this, reason));
       Dispose();
     }
     catch (Exception ex) {
-      ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, reason));
+      _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, ex, reason));
     }
   }
 
   public void EnqueuePacketSend(IPacket message,
                                 bool encrypted = false) {
-    if (!PacketContainer.GetOpcode(message, out var opcode)) {
-      UnknownPacketSendAttempted?.Invoke(this, new UnknownPacketSendAttemptEventArgs(this, message, encrypted));
+    if (!_server.PacketContainer.GetOpcode(message, out var opcode)) {
+      _server.InvokeUnknownPacketSendAttempt(new UnknownPacketSendAttemptEventArgs(this, message, encrypted));
       return;
     }
 
-    var bytes = Serializer.Serialize(message);
+    _server.InvokePacketQueued(new PacketQueuedEventArgs(this, opcode, encrypted));
+    var bytes = _server.Serializer.Serialize(message);
     var serverPacket = new ProcessedOutgoingPacket(opcode, encrypted, bytes);
     OutgoingPacketQueue.Enqueue(serverPacket);
   }
@@ -150,13 +131,13 @@ public class NetTcpConnection : IDisposable
 
   private void HandleReceivePacket(int messageId, bool encrypted, int size, byte[] restBytes) {
     Task.Run(() => {
-      var messageInstance = PacketContainer.GetMessage(messageId);
+      var messageInstance = _server.PacketContainer.GetMessage(messageId);
       if (messageInstance == null) {
-        UnknownPacketReceived?.Invoke(this, new UnknownPacketReceivedEventArgs(this, messageId, encrypted, size, BinaryReader.ReadBytes(size)));
+        _server.InvokeUnknownPacketReceived(new UnknownPacketReceivedEventArgs(this, messageId, encrypted, size, restBytes));
         return;
       }
 
-      var data = Serializer.Deserialize(messageInstance, restBytes);
+      var data = _server.Serializer.Deserialize(messageInstance, restBytes);
       var clientPacket = new ProcessedIncomingPacket(messageId, encrypted, (IPacket)data);
       IncomingPacketQueue.Enqueue(clientPacket);
     });
@@ -171,11 +152,10 @@ public class NetTcpConnection : IDisposable
         var encrypted = BinaryReader.ReadBoolean();
         var size = BinaryReader.ReadInt32();
         var restBytes = BinaryReader.ReadBytes(size);
-        Console.WriteLine($"Received packet with id {messageId} and size {size} from {RemoteIpAddress}:{RemotePort}.");
         HandleReceivePacket(messageId, encrypted, size, restBytes);
       }
       catch (Exception ex) {
-        ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, Reason.NetworkStreamReadError));
+        _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, ex, Reason.NetworkStreamReadError));
         DisconnectByServer(Reason.NetworkStreamReadError);
       }
     }

@@ -8,8 +8,8 @@ namespace NetTCP.Server;
 
 public class NetTcpServer
 {
-  protected ISerializer Serializer { get; }
-  protected NetTcpServerPacketContainer PacketContainer { get; }
+  protected internal ISerializer Serializer { get; }
+  protected internal NetTcpServerPacketContainer PacketContainer { get; }
 
 
   protected IPAddress ListenIpAddress { get; }
@@ -31,13 +31,14 @@ public class NetTcpServer
   public event EventHandler<ServerStartedEventArgs> ServerStarted;
   public event EventHandler<ServerStoppedEventArgs> ServerStopped;
   public event EventHandler<ServerErrorEventArgs> ServerError;
-  // public event EventHandler<ConnectionErrorEventArgs> ConnectionError;
-  // public event EventHandler<ClientDisconnectedEventArgs> ClientDisconnected;
-  // public event EventHandler<UnknownPacketReceivedEventArgs> UnknownPacketReceived;
-  // public event EventHandler<UnknownPacketSendAttemptEventArgs> UnknownPacketSendAttempted;
-  // public event EventHandler<MessageHandlerNotFoundEventArgs> MessageHandlerNotFound;
-  // public event EventHandler<PacketQueuedEventArgs> PacketQueued;
-  // public event EventHandler<PacketReceivedEventArgs> PacketReceived;
+  
+  public event EventHandler<ConnectionErrorEventArgs> ConnectionError;
+  public event EventHandler<ClientDisconnectedEventArgs> ClientDisconnected;
+  public event EventHandler<UnknownPacketReceivedEventArgs> UnknownPacketReceived;
+  public event EventHandler<UnknownPacketSendAttemptEventArgs> UnknownPacketSendAttempted;
+  public event EventHandler<MessageHandlerNotFoundEventArgs> MessageHandlerNotFound;
+  public event EventHandler<PacketQueuedEventArgs> PacketQueued;
+  public event EventHandler<PacketReceivedEventArgs> PacketReceived;
 
   internal NetTcpServer(IPAddress ipAddress, ushort port, NetTcpServerPacketContainer packetContainer, ISerializer serializer) {
     PacketContainer = packetContainer;
@@ -78,7 +79,7 @@ public class NetTcpServer
       await Task.Run(async () => {
                        while (ServerCancellationTokenSource.IsCancellationRequested == false) {
                          var client = await Listener.AcceptTcpClientAsync().ConfigureAwait(false);
-                         var connection = new NetTcpConnection(client, PacketContainer, ServerCancellationTokenSource.Token, Serializer);
+                         var connection = new NetTcpConnection(client, this, ServerCancellationTokenSource.Token);
                          // connection.SubscribeToEvents(this);
                          Connections.Add(connection);
                          ClientConnected?.Invoke(this, new ClientConnectedEventArgs(connection));
@@ -109,4 +110,36 @@ public class NetTcpServer
     foreach (var connection in Connections) 
       connection.EnqueuePacketSend(message, encrypted);
   }
+  
+  internal void InvokeClientDisconnected(ClientDisconnectedEventArgs args) {
+    ClientDisconnected?.Invoke(this, args);
+  }
+  
+  internal void InvokeConnectionError(ConnectionErrorEventArgs args) {
+    ConnectionError?.Invoke(this, args);
+  }
+  
+  internal void InvokeUnknownPacketReceived(UnknownPacketReceivedEventArgs args) {
+    UnknownPacketReceived?.Invoke(this, args);
+  }
+  
+  internal void InvokeUnknownPacketSendAttempt(UnknownPacketSendAttemptEventArgs args) {
+    UnknownPacketSendAttempted?.Invoke(this, args);
+  }
+  
+  internal void InvokeMessageHandlerNotFound(MessageHandlerNotFoundEventArgs args) {
+    MessageHandlerNotFound?.Invoke(this, args);
+  }
+  
+  internal void InvokePacketQueued(PacketQueuedEventArgs args) {
+    PacketQueued?.Invoke(this, args);
+  }
+  
+  internal void InvokePacketReceived(PacketReceivedEventArgs args) {
+    PacketReceived?.Invoke(this, args);
+  }
+  
+
+  
+   
 }

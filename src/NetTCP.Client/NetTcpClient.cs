@@ -177,7 +177,6 @@ public class NetTcpClient : IDisposable
         var encrypted = BinaryReader.ReadBoolean();
         var size = BinaryReader.ReadInt32();
         var restBytes = BinaryReader.ReadBytes(size);
-        Console.WriteLine($"Received packet with id {messageId} and size {size} ");
         HandleReceivePacket(messageId, encrypted, size, restBytes);
       }
       catch (Exception ex) {
