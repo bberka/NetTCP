@@ -188,7 +188,11 @@ public class NetTcpClient : IDisposable
     Disconnect(Reason.ConnectionClosed);
   }
 
-  private void Disconnect(Reason reason) {
+  /// <summary>
+  /// Disconnects and disposes the client. This method will trigger the ClientDisconnected event.
+  /// </summary>
+  /// <param name="reason"></param>
+  public void Disconnect(Reason reason) {
     if (!CanProcess) return;
     try {
       ClientDisconnected?.Invoke(this, new ClientDisconnectedEventArgs(this, reason)); 
@@ -199,9 +203,13 @@ public class NetTcpClient : IDisposable
     }
   }
 
+  /// <summary>
+  /// Disconnects and disposes the client. This method will not trigger any events.
+  /// </summary>
   public void Dispose() {
-    Client.Dispose();
+    ClientCancellationTokenSource.Cancel();
     ClientCancellationTokenSource.Dispose();
-    
+    Client.Close();
+    Client.Dispose();
   }
 }

@@ -6,5 +6,4 @@ namespace NetTCP.Example.Shared.Network.Message.Server;
 [Packet(OpCodes.SMPong)]
 public sealed class SmPong : IPacket
 {
-  public long Timestamp { get; set; } = 0;
 }

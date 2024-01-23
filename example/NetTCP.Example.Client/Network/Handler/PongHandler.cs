@@ -10,10 +10,8 @@ namespace NetTCP.Example.Client.Network.Message.Handler;
 public static class PongHandler
 {
   public static void HandlePing(NetTcpClient client, SmPong request, ILifetimeScope scope) {
-    Console.WriteLine($"[NetTCP - Client] Pong received from server with timestamp {request.Timestamp}.");
+    Console.WriteLine($"[NetTCP - Client] Pong received from server.");
     Thread.Sleep(1000);//dont do this
-    client.EnqueuePacketSend(new CmPing {
-      Timestamp = request.Timestamp + 1
-    });
+    client.EnqueuePacketSend(new CmPing());
   }
 }

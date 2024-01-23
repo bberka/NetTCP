@@ -19,12 +19,29 @@ public class NetTcpConnection : IDisposable
   protected CancellationToken ServerCancellationToken { get; }
   protected CancellationTokenSource ClientCancellationTokenSource { get; }
 
-  public bool CanProcess => Client.Connected && !ClientCancellationTokenSource.IsCancellationRequested;
+  public bool CanProcess {
+    get {
+      if (Client == null) return false;
+      if (Client.Client == null) return false;
+      if (!Client.Connected) return false;
+      if (ClientCancellationTokenSource.IsCancellationRequested) return false;
+      try {
+        if (NetworkStream == null) return false;
+        if (!NetworkStream.CanRead) return false;
+        if (!NetworkStream.CanWrite) return false;
+      }
+      catch (Exception ex) {
+        //Ignored
+      }
+
+      return true;
+    }
+  }
 
   public bool AnyPacketsProcessing => !(IncomingPacketQueue.IsEmpty && OutgoingPacketQueue.IsEmpty);
   public long LastActivity { get; private set; }
 
-  protected NetworkStream NetworkStream => Client.GetStream();
+  protected internal NetworkStream NetworkStream => Client.GetStream();
 
 
   protected BinaryReader BinaryReader {
@@ -147,7 +164,7 @@ public class NetTcpConnection : IDisposable
     while (CanProcess) {
       try {
         ServerCancellationToken.ThrowIfCancellationRequested();
-        LastActivity = DateTime.Now.Ticks;
+        LastActivity = Environment.TickCount64;
         var messageId = BinaryReader.ReadInt32();
         var encrypted = BinaryReader.ReadBoolean();
         var size = BinaryReader.ReadInt32();

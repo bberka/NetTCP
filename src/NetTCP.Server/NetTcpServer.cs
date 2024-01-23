@@ -20,7 +20,7 @@ public class NetTcpServer
   /// <summary>
   ///   Connection timeout in seconds
   /// </summary>
-  public int ConnectionTimeoutSeconds { get; protected set; } = 60 * 5; // 5 minutes
+  public int ConnectionTimeoutSeconds { get; protected set; } = 30; // 30 seconds
 
   protected CancellationTokenSource ServerCancellationTokenSource { get; }
   public ConcurrentBag<NetTcpConnection> Connections { get; }
@@ -31,7 +31,7 @@ public class NetTcpServer
   public event EventHandler<ServerStartedEventArgs> ServerStarted;
   public event EventHandler<ServerStoppedEventArgs> ServerStopped;
   public event EventHandler<ServerErrorEventArgs> ServerError;
-  
+
   public event EventHandler<ConnectionErrorEventArgs> ConnectionError;
   public event EventHandler<ClientDisconnectedEventArgs> ClientDisconnected;
   public event EventHandler<UnknownPacketReceivedEventArgs> UnknownPacketReceived;
@@ -55,15 +55,23 @@ public class NetTcpServer
 
   private async Task HandleConnectionTimeouts() {
     const int timeoutTaskDelay = 10;
-    while (ServerCancellationTokenSource.IsCancellationRequested == false) {
+    while (ServerCancellationTokenSource?.IsCancellationRequested == false) {
       await Task.Delay(TimeSpan.FromSeconds(timeoutTaskDelay)).ConfigureAwait(false);
       var tempConnections = new List<NetTcpConnection>(Connections.Count);
       while (Connections.TryTake(out var connection)) tempConnections.Add(connection);
-      foreach (var tcpConnection in tempConnections)
-        if (tcpConnection.LastActivity + ConnectionTimeoutSeconds * 1000 < Environment.TickCount64)
-          tcpConnection.DisconnectByServer();
-        else
-          Connections.Add(tcpConnection);
+      foreach (var tcpConnection in tempConnections) {
+        if (tcpConnection.LastActivity + ConnectionTimeoutSeconds * 1000 < Environment.TickCount64) {
+          tcpConnection.DisconnectByServer(Reason.Timeout);
+          continue;
+        }
+
+        if (!tcpConnection.CanProcess) {
+          tcpConnection.DisconnectByServer(Reason.CanNotProcess);
+          continue;
+        }
+
+        Connections.Add(tcpConnection);
+      }
     }
   }
 
@@ -76,11 +84,17 @@ public class NetTcpServer
     try {
       Listener.Start();
       ServerStarted?.Invoke(this, new ServerStartedEventArgs(this));
+    }
+    catch (Exception ex) {
+      ServerError?.Invoke(this, new ServerErrorEventArgs(this, ex));
+      throw;
+    }
+
+    try {
       await Task.Run(async () => {
-                       while (ServerCancellationTokenSource.IsCancellationRequested == false) {
-                         var client = await Listener.AcceptTcpClientAsync().ConfigureAwait(false);
+                       while (ServerCancellationTokenSource?.IsCancellationRequested == false) {
+                         var client = await Listener.AcceptTcpClientAsync(ServerCancellationTokenSource.Token).ConfigureAwait(false);
                          var connection = new NetTcpConnection(client, this, ServerCancellationTokenSource.Token);
-                         // connection.SubscribeToEvents(this);
                          Connections.Add(connection);
                          ClientConnected?.Invoke(this, new ClientConnectedEventArgs(connection));
                        }
@@ -88,8 +102,7 @@ public class NetTcpServer
                      ServerCancellationTokenSource.Token);
     }
     catch (Exception ex) {
-      ServerError?.Invoke(this, new ServerErrorEventArgs(this, ex));
-      throw;
+      //Ignore
     }
   }
 
@@ -97,7 +110,7 @@ public class NetTcpServer
     Listener.Stop();
     ServerStopped?.Invoke(this, new ServerStoppedEventArgs(this));
     //TODO Wait all handlers to finish
-    foreach (var connection in Connections) 
+    foreach (var connection in Connections)
       connection.DisconnectByServer(Reason.ServerStopped);
 
     ServerCancellationTokenSource.Cancel();
@@ -107,39 +120,35 @@ public class NetTcpServer
 
   public void EnqueueBroadcastPacket(IPacket message,
                                      bool encrypted = false) {
-    foreach (var connection in Connections) 
+    foreach (var connection in Connections)
       connection.EnqueuePacketSend(message, encrypted);
   }
-  
+
   internal void InvokeClientDisconnected(ClientDisconnectedEventArgs args) {
     ClientDisconnected?.Invoke(this, args);
   }
-  
+
   internal void InvokeConnectionError(ConnectionErrorEventArgs args) {
     ConnectionError?.Invoke(this, args);
   }
-  
+
   internal void InvokeUnknownPacketReceived(UnknownPacketReceivedEventArgs args) {
     UnknownPacketReceived?.Invoke(this, args);
   }
-  
+
   internal void InvokeUnknownPacketSendAttempt(UnknownPacketSendAttemptEventArgs args) {
     UnknownPacketSendAttempted?.Invoke(this, args);
   }
-  
+
   internal void InvokeMessageHandlerNotFound(MessageHandlerNotFoundEventArgs args) {
     MessageHandlerNotFound?.Invoke(this, args);
   }
-  
+
   internal void InvokePacketQueued(PacketQueuedEventArgs args) {
     PacketQueued?.Invoke(this, args);
   }
-  
+
   internal void InvokePacketReceived(PacketReceivedEventArgs args) {
     PacketReceived?.Invoke(this, args);
   }
-  
-
-  
-   
 }

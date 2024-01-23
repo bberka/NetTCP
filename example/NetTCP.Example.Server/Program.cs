@@ -1,4 +1,5 @@
-﻿using NetTCP.Example.Server.Abstract;
+﻿using NetTCP;
+using NetTCP.Example.Server.Abstract;
 using NetTCP.Example.Server.Concrete;
 using NetTCP.Example.Shared;
 using NetTCP.Server;
@@ -27,5 +28,12 @@ server.UnknownPacketSendAttempted += (sender, args) => { Console.WriteLine($"Unk
 server.MessageHandlerNotFound += (sender, args) => { Console.WriteLine($"Message handler not found for {args.Packet.MessageId} from {args.Connection.RemoteIpAddress}"); };
 server.PacketQueued += (sender, args) => { Console.WriteLine($"Packet queued for {args.Connection.RemoteIpAddress} with message id {args.MessageId}"); };
 server.PacketReceived += (sender, args) => { Console.WriteLine($"Packet received from {args.Connection.RemoteIpAddress} with message id {args.MessageId}"); };
+
+Task.Run(() => {
+  while (true) {
+    // Console.WriteLine("Count:" + server.Connections.Count);
+    Thread.Sleep(1000);
+  }
+});
 
 server.StartServerAsync().GetAwaiter().GetResult();

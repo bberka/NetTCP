@@ -1,4 +1,4 @@
-﻿namespace NetTCP;
+﻿  namespace NetTCP;
 
 public enum Reason : byte
 {
@@ -15,5 +15,7 @@ public enum Reason : byte
   PacketReceiveQueueError,
   PacketReceiveHandleError,
   NetworkStreamReadError,
-  ConnectionFailed
+  ConnectionFailed,
+  ClientDisposed,
+  CanNotProcess
 }
