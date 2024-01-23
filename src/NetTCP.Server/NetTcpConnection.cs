@@ -65,23 +65,23 @@ public class NetTcpConnection : IDisposable
     _ = Task.Run(HandleOutgoingPacketQueue, ClientCancellationTokenSource.Token);
   }
 
-  private event EventHandler<ConnectionErrorEventArgs> ConnectionError;
-  private event EventHandler<ClientDisconnectedEventArgs> ClientDisconnected;
-  private event EventHandler<UnknownPacketReceivedEventArgs> UnknownPacketReceived;
-  private event EventHandler<UnknownPacketSendAttemptEventArgs> UnknownPacketSendAttempted;
-  private event EventHandler<MessageHandlerNotFoundEventArgs> MessageHandlerNotFound;
-  private event EventHandler<PacketQueuedEventArgs> PacketQueued;
-  private event EventHandler<PacketReceivedEventArgs> PacketReceived;
+  public event EventHandler<ConnectionErrorEventArgs> ConnectionError;
+  public event EventHandler<ClientDisconnectedEventArgs> ClientDisconnected;
+  public event EventHandler<UnknownPacketReceivedEventArgs> UnknownPacketReceived;
+  public event EventHandler<UnknownPacketSendAttemptEventArgs> UnknownPacketSendAttempted;
+  public event EventHandler<MessageHandlerNotFoundEventArgs> MessageHandlerNotFound;
+  public event EventHandler<PacketQueuedEventArgs> PacketQueued;
+  public event EventHandler<PacketReceivedEventArgs> PacketReceived;
 
-  internal void SubscribeToEvents(NetTcpServer netTcpServer) {
-    netTcpServer.ConnectionError += ConnectionError;
-    netTcpServer.ClientDisconnected += ClientDisconnected;
-    netTcpServer.UnknownPacketReceived += UnknownPacketReceived;
-    netTcpServer.UnknownPacketSendAttempted += UnknownPacketSendAttempted;
-    netTcpServer.MessageHandlerNotFound += MessageHandlerNotFound;
-    netTcpServer.PacketQueued += PacketQueued;
-    netTcpServer.PacketReceived += PacketReceived;
-  }
+  // internal void SubscribeToEvents(NetTcpServer netTcpServer) {
+  //   netTcpServer.ConnectionError += ConnectionError;
+  //   netTcpServer.ClientDisconnected += ClientDisconnected;
+  //   netTcpServer.UnknownPacketReceived += UnknownPacketReceived;
+  //   netTcpServer.UnknownPacketSendAttempted += UnknownPacketSendAttempted;
+  //   netTcpServer.MessageHandlerNotFound += MessageHandlerNotFound;
+  //   netTcpServer.PacketQueued += PacketQueued;
+  //   netTcpServer.PacketReceived += PacketReceived;
+  // }
 
 
   private void HandleOutgoingPacketQueue() {

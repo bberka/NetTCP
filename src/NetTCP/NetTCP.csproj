@@ -4,7 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.0.0-beta3</Version>
+    <Version>1.0.0-beta4</Version>
 
     <Title>NetTCP</Title>
     <Description>Simple TCPListener and TCPClient wrapper for .NET 6+. Provides easy access to events and messages/op codes and handlers</Description>

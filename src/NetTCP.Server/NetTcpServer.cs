@@ -31,14 +31,13 @@ public class NetTcpServer
   public event EventHandler<ServerStartedEventArgs> ServerStarted;
   public event EventHandler<ServerStoppedEventArgs> ServerStopped;
   public event EventHandler<ServerErrorEventArgs> ServerError;
-  public event EventHandler<ConnectionErrorEventArgs> ConnectionError;
-  public event EventHandler<ClientDisconnectedEventArgs> ClientDisconnected;
-  public event EventHandler<UnknownPacketReceivedEventArgs> UnknownPacketReceived;
-  public event EventHandler<UnknownPacketSendAttemptEventArgs> UnknownPacketSendAttempted;
-  public event EventHandler<MessageHandlerNotFoundEventArgs> MessageHandlerNotFound;
-  public event EventHandler<PacketQueuedEventArgs> PacketQueued;
-  public event EventHandler<PacketReceivedEventArgs> PacketReceived;
-
+  // public event EventHandler<ConnectionErrorEventArgs> ConnectionError;
+  // public event EventHandler<ClientDisconnectedEventArgs> ClientDisconnected;
+  // public event EventHandler<UnknownPacketReceivedEventArgs> UnknownPacketReceived;
+  // public event EventHandler<UnknownPacketSendAttemptEventArgs> UnknownPacketSendAttempted;
+  // public event EventHandler<MessageHandlerNotFoundEventArgs> MessageHandlerNotFound;
+  // public event EventHandler<PacketQueuedEventArgs> PacketQueued;
+  // public event EventHandler<PacketReceivedEventArgs> PacketReceived;
 
   internal NetTcpServer(IPAddress ipAddress, ushort port, NetTcpServerPacketContainer packetContainer, ISerializer serializer) {
     PacketContainer = packetContainer;
@@ -80,9 +79,9 @@ public class NetTcpServer
                        while (ServerCancellationTokenSource.IsCancellationRequested == false) {
                          var client = await Listener.AcceptTcpClientAsync().ConfigureAwait(false);
                          var connection = new NetTcpConnection(client, PacketContainer, ServerCancellationTokenSource.Token, Serializer);
-                         connection.SubscribeToEvents(this);
-                         ClientConnected?.Invoke(this, new ClientConnectedEventArgs(connection));
+                         // connection.SubscribeToEvents(this);
                          Connections.Add(connection);
+                         ClientConnected?.Invoke(this, new ClientConnectedEventArgs(connection));
                        }
                      },
                      ServerCancellationTokenSource.Token);
