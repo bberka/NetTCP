@@ -47,7 +47,10 @@ Install-Package NetTCP.Server
 
 ## Things to note
 - Each Packet class must implement IPacket interface as well ass [PacketAttribute] otherwise it will not register
-- Each Packet Handler method must implement [PacketHandlerAttribute(**OPCODE**)] otherwise it will not register
+- Each Packet Handler method must have 3 parameters 
+  - First param must be NetTcpConnection for server or NetTcpClient for Client
+  - Second param must be a class inherits from IPacket and has PacketAttribute
+  - Third param must be ILifeTimeScope (even if you are not gonna use it you have to add it to method param)
 - Defining 2 Message Handlers for same op code will throw an error (Dictionary key error)
 - Defining 2 Packets with same op code will throw an error (Dictionary key error)
 - Assembly types will be merged meaning when you use RegisterPacketsFromAssembly you can use as many assembly as you want
@@ -116,7 +119,6 @@ Client Packet Handler
 ```csharp
 public static class PongHandler
 {
-  [PacketHandler(OpCodes.SMPong)]
   public static void HandlePing(NetTcpClient client, SmPong request, ILifetimeScope scope) {
     Console.WriteLine($"[NetTCP - Client] Pong received from server with timestamp {request.Timestamp}.");
     Thread.Sleep(1000); //dont do this
@@ -156,7 +158,6 @@ Server Packet Handler
 ```csharp
 public static class PingHandler
 {
-  [PacketHandler(OpCodes.CMPing)]
   public static void HandlePing(NetTcpConnection connection, CmPing request, ILifetimeScope scope) {
     var serverInfoMgr = scope.Resolve<IServerInfoMgr>();
     Console.WriteLine($"[NetTCP - Server - {serverInfoMgr.Name}] Ping received from {connection.RemoteIpAddress} with timestamp {request.Timestamp}.");

@@ -39,14 +39,33 @@ public abstract class NetTcpPacketContainer<T> where T : class
   /// </summary>
   /// <param name="assembly"></param>
   private void InitializeMessageTypes(Type[] types) {
-    types = types.DistinctBy(x => x.FullName).ToArray(); //Remove duplicates
+    // types = types.Select(x => new {
+    //                Type = x,
+    //                Methods = x.GetMethods(),
+    //                FullName = x.FullName,
+    //              })
+    //              .DistinctBy(x => x.FullName)
+    //              .Select(x => x.Type)
+    //              .ToArray(); 
+
     var messageHandlers = new Dictionary<int, MessageHandlerDelegate>();
 
     foreach (var type in types.Where(x => x.IsPublic))
     foreach (var method in type.GetMethods().Where(x => x.IsPublic && x.IsStatic && x.DeclaringType == type)) {
-      var attribute = method.GetCustomAttribute<PacketHandlerAttribute>();
+      var parameterInfo = method.GetParameters();
+      var is3Params = parameterInfo.Length == 3;
+      if (!is3Params)
+        continue;
+      var sessionParam = parameterInfo.FirstOrDefault(x => x.ParameterType == typeof(T));
+      var packetParam = parameterInfo.FirstOrDefault(x => x.ParameterType.GetInterface(nameof(IPacket)) != null);
+      var scopeParam = parameterInfo.FirstOrDefault(x => x.ParameterType == typeof(ILifetimeScope));
+      if (sessionParam == null || packetParam == null || scopeParam == null)
+        continue;
+      var attribute = packetParam.ParameterType.GetCustomAttribute<PacketAttribute>();
       if (attribute == null)
         continue;
+      if (messageHandlers.ContainsKey(attribute.MessageId))
+        continue; //Maybe log this?
       var handlerDelegate = BuildMessageHandlerDelegate(method);
       messageHandlers.Add(attribute.MessageId, handlerDelegate);
     }
