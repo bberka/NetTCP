@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Immutable;
+using System.Text;
 using NetTCP.Abstract;
 using Newtonsoft.Json;
 
@@ -6,7 +7,7 @@ namespace NetTCP;
 
 public class JsonSerializer : ISerializer
 {
-  public byte[] Serialize<T>(T obj) where T : IPacket {
+  public byte[] Serialize(IPacket obj) {
     var str = JsonConvert.SerializeObject(obj);
     return Encoding.UTF8.GetBytes(str);
   }
