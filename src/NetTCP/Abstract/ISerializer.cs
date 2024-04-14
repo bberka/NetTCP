@@ -1,4 +1,6 @@
-﻿namespace NetTCP.Abstract;
+﻿using System.Collections.Immutable;
+
+namespace NetTCP.Abstract;
 
 /// <summary>
 /// A base serializer interface that will be used to serialize and deserialize the packets.
@@ -9,8 +11,8 @@
 /// </summary>
 public interface ISerializer
 {
-  public byte[] Serialize<T>(T obj) where T : IPacket;
-  
+  public byte[] Serialize(IPacket obj);
+
   /// <summary>
   /// This method is used to deserialize the bytes into the packet instance.
   /// It will return the packet instance with the data from the bytes.
