@@ -14,10 +14,9 @@ public abstract class NetTcpPacketContainer<T> where T : class
   protected ImmutableDictionary<int, MessageFactoryDelegate> MessageFactories;
 
   protected ImmutableDictionary<int, MessageHandlerDelegate> MessageHandlers;
-  protected ImmutableDictionary<Type, int> OpCodes;
-
   private IContainer Container { get; set; }
 
+  public ImmutableDictionary<Type, int> OpCodes { get; protected set; }
 
   private List<Assembly> Assemblies { get; } = new();
 
