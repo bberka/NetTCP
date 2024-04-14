@@ -123,7 +123,7 @@ public class NetTcpClient : IDisposable
       var packetExists = IncomingPacketQueue.TryDequeue(out var packet);
       if (packetExists)
         try {
-          var result =PacketContainer.InvokeHandler(packet.MessageId, this, packet.Message);
+          var result = PacketContainer.InvokeHandler(packet.MessageId, this, packet.Message);
           if (!result) {
             MessageHandlerNotFound?.Invoke(this, new MessageHandlerNotFoundEventArgs(this, packet));
           }
@@ -195,7 +195,7 @@ public class NetTcpClient : IDisposable
   public void Disconnect(Reason reason) {
     if (!CanProcess) return;
     try {
-      ClientDisconnected?.Invoke(this, new ClientDisconnectedEventArgs(this, reason)); 
+      ClientDisconnected?.Invoke(this, new ClientDisconnectedEventArgs(this, reason));
       Dispose();
     }
     catch (Exception ex) {
