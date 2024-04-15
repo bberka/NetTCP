@@ -3,7 +3,10 @@ Simple TCPListener and TCPClient wrapper for .NET 6+. Provides easy access to ev
 
 Simple use and support for Autofac DI container and scopes for each message handler instance
 
+## DOC NEEDS UPDATE AND CURRENT DOC IS OBSOLETE
+
 ## Warning
+
 This is a work in progress and not ready for production use. Use at your own risk
 
 If you want to fork and improve or implement missing features, feel free to do so
