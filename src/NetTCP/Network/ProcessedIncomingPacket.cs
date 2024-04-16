@@ -2,7 +2,7 @@
 
 namespace NetTCP.Network;
 
-public class ProcessedIncomingPacket : PacketBase
+public class ProcessedIncomingPacket : ProcessedPacketBase
 {
   public ProcessedIncomingPacket(int messageId,
                                  bool encrypted,
