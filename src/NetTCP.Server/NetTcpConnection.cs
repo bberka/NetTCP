@@ -21,10 +21,6 @@ public sealed class NetTcpConnection : NetTcpConnectionBase
     Client = client;
     Scope = _server.ServiceContainer.BeginLifetimeScope();
     ServerCancellationToken = serverCancellationToken;
-    CancellationTokenSource = new CancellationTokenSource();
-    IncomingPacketQueue = new ConcurrentQueue<ProcessedIncomingPacket>();
-    OutgoingPacketQueue = new ConcurrentQueue<ProcessedOutgoingPacket>();
-    ConnectedAtUtc = DateTime.UtcNow;
     RemoteIpAddress = (string)((IPEndPoint)Client.Client.RemoteEndPoint).Address.ToString();
     RemotePort = (ushort)((IPEndPoint)Client.Client.RemoteEndPoint).Port;
     Task.Run(HandleStream, CancellationTokenSource.Token);
@@ -71,27 +67,10 @@ public sealed class NetTcpConnection : NetTcpConnectionBase
       if (packetExists)
         try {
           Debug.WriteLine($"Sending packet to {RemoteIpAddress} with message id {packet.MessageId}");
-          
-          if (packet.Encrypted) {
-            var providerExists = Scope.TryResolve<INetTcpEncryptionProvider>(out var provider);
-            if (!providerExists) {
-              Debug.WriteLine("Encryption provider not found", "NetTcpClient");
-              _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, new Exception("Encryption provider not found, packet impossible to send"), Reason.EncryptionProviderNotFound));
-              continue;
-            }
-
-            var encrypted = provider.Encrypt(packet.Body);
-            BinaryWriter.Write(packet.MessageId);
-            BinaryWriter.Write(packet.Encrypted);
-            BinaryWriter.Write(packet.Size);
-            BinaryWriter.Write(encrypted);
-          }
-          else {
-            BinaryWriter.Write(packet.MessageId);
-            BinaryWriter.Write(packet.Encrypted);
-            BinaryWriter.Write(packet.Size);
-            BinaryWriter.Write(packet.Body);
-          }
+          BinaryWriter.Write(packet.MessageId);
+          BinaryWriter.Write(packet.Encrypted);
+          BinaryWriter.Write(packet.Size);
+          BinaryWriter.Write(packet.Body);
         }
         catch (Exception ex) {
           _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, ex, Reason.PacketSendQueueError));

@@ -13,10 +13,17 @@ public abstract class NetTcpConnectionBase : IDisposable
 {
   public NetTcpConnectionBase(Guid connectionId) {
     ConnectionId = connectionId;
+    CancellationTokenSource = new CancellationTokenSource();
+    IncomingPacketQueue = new ConcurrentQueue<ProcessedIncomingPacket>();
+    OutgoingPacketQueue = new ConcurrentQueue<ProcessedOutgoingPacket>();
+    ConnectedAtUtc = DateTime.UtcNow;
   }
 
   public NetTcpConnectionBase() {
     ConnectionId = Guid.NewGuid();
+    CancellationTokenSource = new CancellationTokenSource();
+    IncomingPacketQueue = new ConcurrentQueue<ProcessedIncomingPacket>();
+    OutgoingPacketQueue = new ConcurrentQueue<ProcessedOutgoingPacket>();
     ConnectedAtUtc = DateTime.UtcNow;
   }
 

@@ -16,7 +16,7 @@ public class NetTcpClient : NetTcpConnectionBase
   protected NetTcpPacketManager<NetTcpClient> PacketManager { get; }
   public IContainer ServiceContainer { get; private set; }
 
-  public NetTcpClient(string remoteIp, ushort remotePort, IContainer serviceContainer, Assembly[]? packetAssemblies = null) {
+  public NetTcpClient(string remoteIp, ushort remotePort, IContainer serviceContainer, Assembly[]? packetAssemblies = null) : base() {
     if (string.IsNullOrEmpty(remoteIp)) {
       throw new ArgumentException("Empty ip address: " + remoteIp, nameof(remoteIp));
     }
@@ -31,21 +31,19 @@ public class NetTcpClient : NetTcpConnectionBase
     if (serviceContainer is null) {
       throw new ArgumentNullException(nameof(serviceContainer));
     }
-
+    RemoteIpAddress = remoteIp;
+    RemotePort = remotePort;
+    ServiceContainer = serviceContainer;
+    CancellationTokenSource = new CancellationTokenSource();
+    Client = new TcpClient();
     PacketManager = new NetTcpPacketManager<NetTcpClient>();
     packetAssemblies ??= Array.Empty<Assembly>();
     foreach (var assembly in packetAssemblies) {
       PacketManager.Register(assembly);
     }
-
     PacketManager.Initialize();
 
-    RemoteIpAddress = remoteIp;
-    RemotePort = remotePort;
-    Client = new TcpClient();
-    CancellationTokenSource = new CancellationTokenSource();
-    ConnectedAtUtc = DateTime.UtcNow;
-    ServiceContainer = serviceContainer;
+    
   }
 
 
