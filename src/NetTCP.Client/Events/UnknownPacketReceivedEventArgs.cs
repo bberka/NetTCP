@@ -1,6 +1,6 @@
 ﻿namespace NetTCP.Client.Events;
 
-public class UnknownPacketReceivedEventArgs
+public sealed class UnknownPacketReceivedEventArgs
 {
   internal UnknownPacketReceivedEventArgs(NetTcpClient client, int messageId, bool encrypted, int size, byte[] packet) {
     Client = client;

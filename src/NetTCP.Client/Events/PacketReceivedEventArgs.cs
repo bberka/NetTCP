@@ -1,6 +1,6 @@
 ﻿namespace NetTCP.Client.Events;
 
-public class PacketReceivedEventArgs
+public sealed class PacketReceivedEventArgs
 {
   internal PacketReceivedEventArgs(NetTcpClient client, int messageId, bool encrypted) {
     Client = client;

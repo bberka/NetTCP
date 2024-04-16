@@ -1,6 +1,6 @@
 ﻿namespace NetTCP.Server.Events;
 
-public class PacketReceivedEventArgs
+public sealed class PacketReceivedEventArgs
 {
   internal PacketReceivedEventArgs(NetTcpConnection connection, int messageId, bool encrypted) {
     Connection = connection;

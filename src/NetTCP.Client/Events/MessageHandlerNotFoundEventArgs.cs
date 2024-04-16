@@ -2,13 +2,13 @@
 
 namespace NetTCP.Client.Events;
 
-public class MessageHandlerNotFoundEventArgs
+public sealed class MessageHandlerNotFoundEventArgs
 {
-  internal MessageHandlerNotFoundEventArgs(NetTcpClient client, ProcessedIncomingPacket packet) {
+  internal MessageHandlerNotFoundEventArgs(NetTcpClient client, ProcessedIncomingPacket processedIncomingPacket) {
     Client = client;
-    Packet = packet;
+    ProcessedIncomingPacket = processedIncomingPacket;
   }
 
   public NetTcpClient Client { get; }
-  public ProcessedIncomingPacket Packet { get; }
+  public ProcessedIncomingPacket ProcessedIncomingPacket { get; }
 }

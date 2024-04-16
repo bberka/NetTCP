@@ -1,8 +1,8 @@
 ﻿namespace NetTCP.Client.Events;
 
-public class PacketQueuedEventArgs
+public sealed class PacketQueuedEventArgs
 {
-  internal PacketQueuedEventArgs(NetTcpClient client, int messageId, bool encrypted) {
+  internal PacketQueuedEventArgs(NetTcpClient client, int messageId, bool encrypted, int size) {
     Client = client;
     MessageId = messageId;
     Encrypted = encrypted;

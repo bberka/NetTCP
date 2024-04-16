@@ -1,10 +1,8 @@
 ﻿namespace NetTCP.Server.Events;
 
-public class ServerStoppedEventArgs
+public sealed class ServerStoppedEventArgs
 {
-  internal ServerStoppedEventArgs(NetTcpServer server) {
-    Server = server;
+  internal ServerStoppedEventArgs() {
   }
 
-  public NetTcpServer Server { get; }
 }

@@ -1,13 +1,10 @@
 ﻿namespace NetTCP.Server.Events;
 
-public class ServerErrorEventArgs
+public sealed class ServerErrorEventArgs
 {
-  internal ServerErrorEventArgs(NetTcpServer server, Exception exception) {
-    Server = server;
+  internal ServerErrorEventArgs(Exception exception) {
     Exception = exception;
   }
-
-  public NetTcpServer Server { get; }
   public Exception Exception { get; }
   
 }

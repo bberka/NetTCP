@@ -1,10 +1,8 @@
 ﻿namespace NetTCP.Server.Events;
 
-public class ServerStartedEventArgs
+public sealed class ServerStartedEventArgs
 {
-  internal ServerStartedEventArgs(NetTcpServer server) {
-    Server = server;
+  internal ServerStartedEventArgs() {
   }
 
-  public NetTcpServer Server { get; }
 }

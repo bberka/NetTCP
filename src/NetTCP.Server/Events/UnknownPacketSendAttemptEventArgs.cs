@@ -2,7 +2,7 @@
 
 namespace NetTCP.Server.Events;
 
-public class UnknownPacketSendAttemptEventArgs
+public sealed class UnknownPacketSendAttemptEventArgs
 {
   internal UnknownPacketSendAttemptEventArgs(NetTcpConnection connection, IPacket message, bool encrypted) {
     Connection = connection;

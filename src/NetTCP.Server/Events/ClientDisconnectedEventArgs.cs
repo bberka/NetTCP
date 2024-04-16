@@ -1,6 +1,6 @@
 ﻿namespace NetTCP.Server.Events;
 
-public class ClientDisconnectedEventArgs
+public sealed class ClientDisconnectedEventArgs
 {
   internal ClientDisconnectedEventArgs(NetTcpConnection connection, Reason reason) {
     Connection = connection;

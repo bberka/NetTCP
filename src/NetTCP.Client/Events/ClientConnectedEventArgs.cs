@@ -1,6 +1,6 @@
 ﻿namespace NetTCP.Client.Events;
 
-public class ClientConnectedEventArgs
+public sealed class ClientConnectedEventArgs
 {
   public NetTcpClient Client { get; }
 
@@ -8,8 +8,4 @@ public class ClientConnectedEventArgs
     Client = client;
   }
 
-
-  public static ClientConnectedEventArgs Create(NetTcpClient client) {
-    return new ClientConnectedEventArgs(client);
-  }
 }

@@ -1,6 +1,6 @@
 ﻿namespace NetTCP.Client.Events;
 
-public class ClientDisconnectedEventArgs
+public sealed class ClientDisconnectedEventArgs
 {
   public NetTcpClient Client { get; }
   public Reason Reason { get; }

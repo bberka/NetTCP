@@ -2,7 +2,7 @@
 
 namespace NetTCP.Client.Events;
 
-public class UnknownPacketSendAttemptEventArgs
+public sealed class UnknownPacketSendAttemptEventArgs
 {
   internal UnknownPacketSendAttemptEventArgs(NetTcpClient client, IPacket message, bool encrypted) {
     Client = client;

@@ -1,6 +1,6 @@
 ﻿namespace NetTCP.Client.Events;
 
-public class ConnectionErrorEventArgs
+public sealed class ConnectionErrorEventArgs
 {
   internal ConnectionErrorEventArgs(NetTcpClient client, Exception exception, Reason reason) {
     Client = client;

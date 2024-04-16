@@ -1,6 +1,6 @@
 ﻿namespace NetTCP.Server.Events;
 
-public class ClientConnectedEventArgs
+public sealed class ClientConnectedEventArgs
 {
   internal ClientConnectedEventArgs(NetTcpConnection connection) {
     Connection = connection;
