@@ -9,9 +9,10 @@ namespace NetTCP.Example.Client.Network.Message.Handler;
 
 public static class PongHandler
 {
-  public static void HandlePing(NetTcpClient client, SmPong request, ILifetimeScope scope) {
-    Console.WriteLine($"[NetTCP - Client] Pong received from server.");
-    Thread.Sleep(1000);//dont do this
-    client.EnqueuePacketSend(new CmPing());
+  public static void HandlePing(NetTcpClient client, SmPong request) {
+    client.EnqueuePacketSend(new CmPing() {
+      Ticks = (DateTime.Now - client.ConnectedAtUtc).Ticks
+    });
+    Console.WriteLine($"Received tick: {request.Ticks}");
   }
 }

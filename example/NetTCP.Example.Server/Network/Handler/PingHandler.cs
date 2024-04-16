@@ -8,10 +8,12 @@ namespace NetTCP.Example.Server.Network.Message.Handler;
 
 public static class PingHandler
 {
-  public static void HandlePing(NetTcpConnection connection, CmPing request, ILifetimeScope scope) {
-    var serverInfoMgr = scope.Resolve<IServerInfoMgr>();
-    Console.WriteLine($"[NetTCP - Server - {serverInfoMgr.Name}] Ping received from {connection.RemoteIpAddress} ");
-    Thread.Sleep(1000); //dont do this
-    connection.EnqueuePacketSend(new SmPong {});
+  public static void HandlePing(NetTcpConnection connection, CmPing request) {
+    Thread.Sleep(1000);
+    var serverInfoMgr = connection.Scope.Resolve<IServerInfoMgr>();
+    connection.EnqueuePacketSend(new SmPong {
+      Ticks = (DateTime.Now - connection.ConnectedAtUtc).Ticks
+    });
+    Console.WriteLine($"Received tick: {request.Ticks}");
   }
 }

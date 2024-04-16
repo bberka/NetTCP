@@ -1,38 +1,18 @@
 ﻿using NetTCP;
 using NetTCP.Client;
+using NetTCP.Example.Client;
 using NetTCP.Example.Shared;
 using NetTCP.Example.Shared.Network.Message.Client;
 
-var builder = NetTcpClientBuilder.Create();
-
-builder.RegisterPacketsFromAssembly(typeof(OpCodes).Assembly);
-
-
-var client = builder.Build("127.0.0.1", 8080);
-
-client.ClientConnected += (sender, args) => { Console.WriteLine("Client connected"); };
-
-client.ClientDisconnected += (sender, args) => { Console.WriteLine("Client disconnected"); };
-
-client.PacketReceived += (sender, args) => { Console.WriteLine($"Received packet {args.MessageId}"); };
-
-client.PacketQueued += (sender, args) => { Console.WriteLine($"Queued packet {args.MessageId}"); };
-
-client.UnknownPacketReceived += (sender, args) => { Console.WriteLine($"Unknown packet received {args.MessageId}"); };
-
-client.UnknownPacketSendAttempted += (sender, args) => { Console.WriteLine($"Unknown packet send attempted {args.Message.ToString()}"); };
-
-client.MessageHandlerNotFound += (sender, args) => { Console.WriteLine($"Message handler not found {args.Packet.ToString()}"); };
-
-
-client.ConnectWithRetry(3, 1000);
-
-AppDomain.CurrentDomain.ProcessExit += (sender, args) => { client.Dispose(); };
-
-while (client.CanProcess) {
-  Thread.Sleep(5000);
-  client.EnqueuePacketSend(new CmPing());
+Task.Run((() => {
+             Thread.Sleep(3000);
+             ExampleClient.This.Client.Disconnect(Reason.ClientDisconnected);
+           }));
+while (ExampleClient.This.Client.CanRead) {
+  Thread.Sleep(100);
+  // ExampleClient.This.Client.Disconnect(Reason.Unknown);
+  ExampleClient.This.Client.EnqueuePacketSend(new CmPing());
+  Console.WriteLine("Sent ping");
 }
-
 
 Console.WriteLine("Client disconnected");
