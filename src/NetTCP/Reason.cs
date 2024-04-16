@@ -17,5 +17,6 @@ public enum Reason : byte
   NetworkStreamReadError,
   ConnectionFailed,
   ClientDisposed,
-  CanNotProcess
+  CanNotProcess,
+  EncryptionProviderNotFound
 }

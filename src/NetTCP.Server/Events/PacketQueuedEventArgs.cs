@@ -4,18 +4,14 @@ namespace NetTCP.Server.Events;
 
 public sealed class PacketQueuedEventArgs
 {
-
-  public PacketQueuedEventArgs(NetTcpConnection connection, int messageId, bool encrypted, IPacket message, byte[] bytes) {
+  public PacketQueuedEventArgs(NetTcpConnection connection, int opCode, bool encrypted, PacketQueueType packetQueueType) {
     Connection = connection;
-    MessageId = messageId;
+    OpCode = opCode;
     Encrypted = encrypted;
-    Message = message;
-    Bytes = bytes;
+    PacketQueueType = packetQueueType;
   }
-
-  public byte[] Bytes { get; set; }
-  public IPacket Message { get; set; }
   public NetTcpConnection Connection { get; }
-  public int MessageId { get; }
+  public int OpCode { get; }
   public bool Encrypted { get; }
+  public PacketQueueType PacketQueueType { get; }
 }

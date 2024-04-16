@@ -21,7 +21,7 @@ public class ExampleClient
     Client.ClientConnected += (sender, args) => { Console.WriteLine("Client connected "); };
     Client.ClientDisconnected += (sender, args) => { Console.WriteLine("Client disconnected reason: " + args.Reason.ToString()); };
     Client.PacketReceived += (sender, args) => { Console.WriteLine($"Received packet {args.MessageId}"); };
-    Client.PacketQueued += (sender, args) => { Console.WriteLine($"Queued packet {args.MessageId}"); };
+    Client.PacketQueued += (sender, args) => { Console.WriteLine($"Queued packet {args.OpCode}"); };
     Client.UnknownPacketReceived += (sender, args) => { Console.WriteLine($"Unknown packet received {args.MessageId}"); };
     Client.UnknownPacketSendAttempted += (sender, args) => { Console.WriteLine($"Unknown packet send attempted {args.Message.ToString()}"); };
     Client.MessageHandlerNotFound += (sender, args) => { Console.WriteLine($"Message handler not found {args.ProcessedIncomingPacket.ToString()}"); };

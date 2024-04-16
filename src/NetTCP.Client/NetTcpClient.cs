@@ -77,11 +77,23 @@ public class NetTcpClient : NetTcpConnectionBase
           return;
         }
 
+        if (encrypted) {
+          var providerExists = Scope.TryResolve<INetTcpEncryptionProvider>(out var provider);
+          if (!providerExists) {
+            Debug.WriteLine("Encryption provider not found", "NetTcpClient");
+            ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, new Exception("Encryption provider not found"), Reason.EncryptionProviderNotFound));
+            return;
+          }
+
+          var decrypted = provider.Decrypt(restBytes);
+          restBytes = decrypted;
+        }
+
         messageInstance.Read(new TcpPacketReader(restBytes));
         var clientPacket = new ProcessedIncomingPacket(messageId, encrypted, messageInstance);
         Debug.WriteLine("Packet received: " + messageId, "NetTcpClient");
         IncomingPacketQueue.Enqueue(clientPacket);
-        PacketQueued?.Invoke(this, new PacketQueuedEventArgs(this, messageId, encrypted, size));
+        PacketQueued?.Invoke(this, new PacketQueuedEventArgs(this, messageId, encrypted, PacketQueueType.Incoming));
       }
       catch (Exception ex) {
         Debug.WriteLine("Error reading network stream: " + ex.Message, "NetTcpClient");
@@ -160,6 +172,7 @@ public class NetTcpClient : NetTcpConnectionBase
     }
 
     base.ProcessOutgoingPacket(opcode, encrypted, message);
+    PacketQueued?.Invoke(this, new PacketQueuedEventArgs(this, opcode, encrypted, PacketQueueType.Outgoing));
     Debug.WriteLine("Packet queued: " + message, "NetTcpClient");
   }
 

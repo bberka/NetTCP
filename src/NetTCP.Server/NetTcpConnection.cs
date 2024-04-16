@@ -54,7 +54,7 @@ public sealed class NetTcpConnection : NetTcpConnectionBase
         var clientPacket = new ProcessedIncomingPacket(messageId, encrypted, messageInstance);
         IncomingPacketQueue.Enqueue(clientPacket);
         Debug.WriteLine($"Packet received from {RemoteIpAddress} with message id {messageId}");
-        _server.InvokePacketQueued(new PacketQueuedEventArgs(this, messageId, encrypted, messageInstance, restBytes));
+        _server.InvokePacketQueued(new PacketQueuedEventArgs(this, messageId, encrypted, PacketQueueType.Incoming));
       }
       catch (Exception ex) {
         _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, ex, Reason.NetworkStreamReadError));
@@ -71,10 +71,27 @@ public sealed class NetTcpConnection : NetTcpConnectionBase
       if (packetExists)
         try {
           Debug.WriteLine($"Sending packet to {RemoteIpAddress} with message id {packet.MessageId}");
-          BinaryWriter.Write(packet.MessageId);
-          BinaryWriter.Write(packet.Encrypted);
-          BinaryWriter.Write(packet.Size);
-          BinaryWriter.Write(packet.Body);
+          
+          if (packet.Encrypted) {
+            var providerExists = Scope.TryResolve<INetTcpEncryptionProvider>(out var provider);
+            if (!providerExists) {
+              Debug.WriteLine("Encryption provider not found", "NetTcpClient");
+              _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, new Exception("Encryption provider not found, packet impossible to send"), Reason.EncryptionProviderNotFound));
+              continue;
+            }
+
+            var encrypted = provider.Encrypt(packet.Body);
+            BinaryWriter.Write(packet.MessageId);
+            BinaryWriter.Write(packet.Encrypted);
+            BinaryWriter.Write(packet.Size);
+            BinaryWriter.Write(encrypted);
+          }
+          else {
+            BinaryWriter.Write(packet.MessageId);
+            BinaryWriter.Write(packet.Encrypted);
+            BinaryWriter.Write(packet.Size);
+            BinaryWriter.Write(packet.Body);
+          }
         }
         catch (Exception ex) {
           _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, ex, Reason.PacketSendQueueError));
@@ -135,13 +152,8 @@ public sealed class NetTcpConnection : NetTcpConnectionBase
       Debug.WriteLine($"Unknown packet send attempted: {message}");
       return;
     }
-
-    var writer = new TcpPacketWriter();
-    message.Write(writer);
-    var bytes = writer.ToArray();
-    var serverPacket = new ProcessedOutgoingPacket(opcode, encrypted, bytes);
-    OutgoingPacketQueue.Enqueue(serverPacket);
-    _server.InvokePacketQueued(new PacketQueuedEventArgs(this, opcode, encrypted, message, bytes));
+    base.ProcessOutgoingPacket(opcode, encrypted, message);
+    _server.InvokePacketQueued(new PacketQueuedEventArgs(this, opcode, encrypted,PacketQueueType.Outgoing));
     Debug.WriteLine($"Packet queued: {message}");
   }
 }

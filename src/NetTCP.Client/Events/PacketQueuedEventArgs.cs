@@ -2,13 +2,15 @@
 
 public sealed class PacketQueuedEventArgs
 {
-  internal PacketQueuedEventArgs(NetTcpClient client, int messageId, bool encrypted, int size) {
+  internal PacketQueuedEventArgs(NetTcpClient client, int opCode, bool encrypted, PacketQueueType packetQueueType) {
     Client = client;
-    MessageId = messageId;
+    OpCode = opCode;
     Encrypted = encrypted;
+    PacketQueueType = packetQueueType;
   }
 
   public NetTcpClient Client { get; }
-  public int MessageId { get; }
+  public int OpCode { get; }
   public bool Encrypted { get; }
+  public PacketQueueType PacketQueueType { get; }
 }

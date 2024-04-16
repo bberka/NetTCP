@@ -109,7 +109,17 @@ public abstract class NetTcpConnectionBase : IDisposable
   protected void ProcessOutgoingPacket(int opcode, bool encrypted, IPacket message) {
     var writer = new TcpPacketWriter();
     message.Write(writer);
-    var packet = new ProcessedOutgoingPacket(opcode, encrypted, writer.ToArray());
+    var bytes = writer.ToArray();
+    if (encrypted) {
+      var providerExists = Scope.TryResolve<INetTcpEncryptionProvider>(out var provider);
+      if (!providerExists) {
+        throw new Exception("Encryption provider not found, packet impossible to send, please register an encryption provider in the service container. OpCode: " + opcode);
+      }
+
+      bytes = provider.Encrypt(bytes);
+    }
+    
+    var packet = new ProcessedOutgoingPacket(opcode, encrypted, bytes);
     OutgoingPacketQueue.Enqueue(packet);
   }
 
