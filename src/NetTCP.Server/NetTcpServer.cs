@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using Autofac;
 using NetTCP.Abstract;
+using NetTCP.Events;
 using NetTCP.Server.Events;
 
 namespace NetTCP.Server;
@@ -18,7 +19,7 @@ public class NetTcpServer
   protected TcpListener Listener { get; }
 
   /// <summary>
-  ///   Connection timeout in seconds
+  ///   Session timeout in seconds
   /// </summary>
   public int ConnectionTimeoutSeconds { get; protected set; } = 30; // 30 seconds
 
@@ -27,13 +28,13 @@ public class NetTcpServer
 
   public bool CanProcess => Listener.Server.IsBound && !ServerCancellationTokenSource.IsCancellationRequested;
 
-  public event EventHandler<ClientConnectedEventArgs> ClientConnected;
+  public event EventHandler<ConnectedEventArgs> ClientConnected;
   public event EventHandler<ServerStartedEventArgs> ServerStarted;
   public event EventHandler<ServerStoppedEventArgs> ServerStopped;
   public event EventHandler<ServerErrorEventArgs> ServerError;
 
   public event EventHandler<ConnectionErrorEventArgs> ConnectionError;
-  public event EventHandler<ClientDisconnectedEventArgs> ClientDisconnected;
+  public event EventHandler<DisconnectedEventArgs> ClientDisconnected;
   public event EventHandler<UnknownPacketReceivedEventArgs> UnknownPacketReceived;
   public event EventHandler<UnknownPacketSendAttemptEventArgs> UnknownPacketSendAttempted;
   public event EventHandler<MessageHandlerNotFoundEventArgs> MessageHandlerNotFound;
@@ -86,14 +87,14 @@ public class NetTcpServer
       while (Connections.TryTake(out var connection)) tempConnections.Add(connection);
       foreach (var tcpConnection in tempConnections) {
         if (tcpConnection.LastActivity + ConnectionTimeoutSeconds * 1000 < Environment.TickCount64) {
-          Debug.WriteLine("Connection timeout: " + tcpConnection.RemoteIpAddress, "NetTcpServer");
-          tcpConnection.Disconnect(Reason.Timeout);
+          Debug.WriteLine("Session timeout: " + tcpConnection.RemoteIpAddress, "NetTcpServer");
+          tcpConnection.Disconnect(NetTcpErrorReason.Timeout);
           continue;
         }
 
         if (!tcpConnection.CanRead) {
-          Debug.WriteLine("Connection can not process: " + tcpConnection.RemoteIpAddress, "NetTcpServer");
-          tcpConnection.Disconnect(Reason.CanNotProcess);
+          Debug.WriteLine("Session can not process: " + tcpConnection.RemoteIpAddress, "NetTcpServer");
+          tcpConnection.Disconnect(NetTcpErrorReason.CanNotProcess);
           continue;
         }
 
@@ -125,7 +126,7 @@ public class NetTcpServer
                          var connection = new NetTcpConnection(client, this, ServerCancellationTokenSource.Token);
                          Debug.WriteLine("New connection accepted: " + connection.RemoteIpAddress, "NetTcpServer");
                          Connections.Add(connection);
-                         ClientConnected?.Invoke(this, new ClientConnectedEventArgs(connection));
+                         ClientConnected?.Invoke(this, new ConnectedEventArgs(connection));
                        }
                        catch (Exception ex) {
                          Debug.WriteLine("Error accepting new connection: " + ex.Message, "NetTcpServer");
@@ -136,12 +137,12 @@ public class NetTcpServer
                    ServerCancellationTokenSource.Token);
   }
 
-  public void StopServer(Reason reason) {
+  public void StopServer(NetTcpErrorReason netTcpErrorReason) {
     Debug.WriteLine("Stopping server", "NetTcpServer");
     Listener.Stop();
     var disconnectTasks = new List<Task>();
     foreach (var connection in Connections) {
-      disconnectTasks.Add(Task.Run(() => connection.Disconnect(reason)));
+      disconnectTasks.Add(Task.Run(() => connection.Disconnect(netTcpErrorReason)));
     }
     Task.WhenAll(disconnectTasks).GetAwaiter().GetResult();
     ServerCancellationTokenSource.Dispose();
@@ -159,7 +160,7 @@ public class NetTcpServer
     //   connection.EnqueuePacketSend(message, encrypted);
   }
 
-  internal void InvokeClientDisconnected(ClientDisconnectedEventArgs args) {
+  internal void InvokeClientDisconnected(DisconnectedEventArgs args) {
     ClientDisconnected?.Invoke(this, args);
   }
 

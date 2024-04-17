@@ -1,8 +1,8 @@
 ﻿namespace NetTCP.Server.Events;
 
-public sealed class ServerErrorEventArgs
+public readonly struct ServerErrorEventArgs
 {
-  internal ServerErrorEventArgs(Exception exception) {
+  public ServerErrorEventArgs(Exception exception) {
     Exception = exception;
   }
   public Exception Exception { get; }

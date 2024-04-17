@@ -1,8 +1,8 @@
 ﻿namespace NetTCP.Server.Events;
 
-public sealed class ServerStartedEventArgs
+public readonly struct ServerStartedEventArgs
 {
-  internal ServerStartedEventArgs() {
+  public ServerStartedEventArgs() {
   }
 
 }

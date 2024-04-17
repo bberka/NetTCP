@@ -9,4 +9,4 @@ while (ExampleClient.This.Client.CanRead) {
   ExampleClient.This.Client.EnqueuePacketSend(new CmPing());
 }
 
-Console.WriteLine("Client disconnected");
+Console.WriteLine("Session disconnected");

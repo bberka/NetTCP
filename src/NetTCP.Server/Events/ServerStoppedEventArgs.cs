@@ -1,8 +1,8 @@
 ﻿namespace NetTCP.Server.Events;
 
-public sealed class ServerStoppedEventArgs
+public readonly struct ServerStoppedEventArgs
 {
-  internal ServerStoppedEventArgs() {
+  public ServerStoppedEventArgs() {
   }
 
 }

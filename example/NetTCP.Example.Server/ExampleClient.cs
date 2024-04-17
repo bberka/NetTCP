@@ -24,16 +24,16 @@ public class ExampleClient
     Server.ServerStarted += (sender, args) => { Console.WriteLine("Server started on " + Server.IpAddress + ":" + Server.Port); };
     Server.ServerStopped += (sender, args) => { Console.WriteLine("Server stopped"); };
     Server.ServerError += (sender, args) => { Console.WriteLine($"Server error: {args.Exception}"); };
-    Server.ClientConnected += (sender, args) => { Console.WriteLine($"New client connected: {args.Connection.RemoteIpAddress}"); };
+    Server.ClientConnected += (sender, args) => { Console.WriteLine($"New client connected: {args.Session.RemoteIpAddress}"); };
     Server.ClientDisconnected += (sender, args) => {
-      Console.WriteLine($"Client disconnected: {args.Connection.RemoteIpAddress}");
+      Console.WriteLine($"Session disconnected: {args.Session.RemoteIpAddress}");
     };
-    Server.UnknownPacketReceived += (sender, args) => { Console.WriteLine($"Unknown packet received from {args.Connection.RemoteIpAddress}"); };
-    Server.UnknownPacketSendAttempted += (sender, args) => { Console.WriteLine($"Unknown packet send attempted to {args.Connection.RemoteIpAddress}"); };
-    Server.MessageHandlerNotFound += (sender, args) => { Console.WriteLine($"Message handler not found for {args.Packet.MessageId} from {args.Connection.RemoteIpAddress}"); };
-    Server.PacketQueued += (sender, args) => { Console.WriteLine($"Packet queued for {args.Connection.RemoteIpAddress} with message id {args.OpCode}"); };
-    Server.PacketReceived += (sender, args) => { Console.WriteLine($"Packet received from {args.Connection.RemoteIpAddress} with message id {args.MessageId}"); };
-    Server.HandlerError += (sender, args) => { Console.WriteLine($"Handler error {args.Connection.RemoteIpAddress} with message id {args.Exception.Message}"); };
+    Server.UnknownPacketReceived += (sender, args) => { Console.WriteLine($"Unknown packet received from {args.Session.RemoteIpAddress}"); };
+    Server.UnknownPacketSendAttempted += (sender, args) => { Console.WriteLine($"Unknown packet send attempted to {args.Session.RemoteIpAddress}"); };
+    Server.MessageHandlerNotFound += (sender, args) => { Console.WriteLine($"Message handler not found for {args.ProcessedIncomingPacket.MessageId} from {args.Session.RemoteIpAddress}"); };
+    Server.PacketQueued += (sender, args) => { Console.WriteLine($"Packet queued for {args.Session.RemoteIpAddress} with message id {args.OpCode}"); };
+    Server.PacketReceived += (sender, args) => { Console.WriteLine($"Packet received from {args.Session.RemoteIpAddress} with message id {args.MessageId}"); };
+    Server.HandlerError += (sender, args) => { Console.WriteLine($"Handler error {args.Session.RemoteIpAddress} with message id {args.Exception.Message}"); };
 
   }
 

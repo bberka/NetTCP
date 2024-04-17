@@ -9,7 +9,7 @@ using NetTCP.Attributes;
 
 namespace NetTCP;
 
-public sealed class NetTcpPacketManager<T> where T : NetTcpConnectionBase
+public sealed class NetTcpPacketManager<T> where T : INetTcpSession
 {
   public delegate void MessageHandlerDelegate(T connection, IPacket packet);
 

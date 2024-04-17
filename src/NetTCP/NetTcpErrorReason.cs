@@ -1,6 +1,6 @@
 ﻿  namespace NetTCP;
 
-public enum Reason : byte
+public enum NetTcpErrorReason : byte
 {
   Unknown,
   Timeout,

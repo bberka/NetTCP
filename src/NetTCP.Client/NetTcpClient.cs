@@ -6,12 +6,12 @@ using System.Reflection;
 using System.Text;
 using Autofac;
 using NetTCP.Abstract;
-using NetTCP.Client.Events;
+using NetTCP.Events;
 using NetTCP.Network;
 
 namespace NetTCP.Client;
 
-public class NetTcpClient : NetTcpConnectionBase
+public class NetTcpClient : NetTcpConnectionBase,INetTcpSession
 {
   protected NetTcpPacketManager<NetTcpClient> PacketManager { get; }
   public IContainer ServiceContainer { get; private set; }
@@ -47,10 +47,10 @@ public class NetTcpClient : NetTcpConnectionBase
   }
 
 
-  public event EventHandler<ClientConnectedEventArgs> ClientConnected;
+  public event EventHandler<ConnectedEventArgs> ClientConnected;
   public event EventHandler<ConnectionErrorEventArgs> ConnectionError;
   public event EventHandler<HandlerErrorEventArgs> HandlerError;
-  public event EventHandler<ClientDisconnectedEventArgs> ClientDisconnected;
+  public event EventHandler<DisconnectedEventArgs> ClientDisconnected;
   public event EventHandler<UnknownPacketReceivedEventArgs> UnknownPacketReceived;
   public event EventHandler<UnknownPacketSendAttemptEventArgs> UnknownPacketSendAttempted;
   public event EventHandler<MessageHandlerNotFoundEventArgs> MessageHandlerNotFound;
@@ -79,7 +79,7 @@ public class NetTcpClient : NetTcpConnectionBase
           var providerExists = Scope.TryResolve<INetTcpEncryptionProvider>(out var provider);
           if (!providerExists) {
             Debug.WriteLine("Encryption provider not found", "NetTcpClient");
-            ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, new Exception("Encryption provider not found"), Reason.EncryptionProviderNotFound));
+            ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, new Exception("Encryption provider not found"), NetTcpErrorReason.EncryptionProviderNotFound));
             return;
           }
 
@@ -95,7 +95,7 @@ public class NetTcpClient : NetTcpConnectionBase
       }
       catch (Exception ex) {
         Debug.WriteLine("Error reading network stream: " + ex.Message, "NetTcpClient");
-        ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, Reason.NetworkStreamReadError));
+        ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, NetTcpErrorReason.NetworkStreamReadError));
       }
     }
   }
@@ -113,7 +113,7 @@ public class NetTcpClient : NetTcpConnectionBase
           BinaryWriter.Write(packet.Body);
         }
         catch (Exception ex) {
-          ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, Reason.PacketSendQueueError));
+          ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, NetTcpErrorReason.PacketSendQueueError));
           Debug.WriteLine($"Error sending packet messageId:{packet.MessageId} encrypted:{packet.Encrypted} size:{packet.Size} to {RemoteIpAddress}:{RemotePort} {ex.Message}", "NetTcpClient");
         }
       }
@@ -148,20 +148,20 @@ public class NetTcpClient : NetTcpConnectionBase
   /// <summary>
   /// Disconnects and disposes the client. This method will trigger the ClientDisconnected event.
   /// </summary>
-  /// <param name="reason"></param>
-  public override void Disconnect(Reason reason = Reason.Unknown) {
+  /// <param name="netTcpErrorReason"></param>
+  public override void Disconnect(NetTcpErrorReason netTcpErrorReason = NetTcpErrorReason.Unknown) {
     try {
-      base.ProcessDisconnect(reason);
-      Debug.WriteLine("Client disconnected: " + RemoteIpAddress, "NetTcpClient");
-      ClientDisconnected?.Invoke(this, new ClientDisconnectedEventArgs(this, reason));
+      base.ProcessDisconnect(netTcpErrorReason);
+      Debug.WriteLine("Session disconnected: " + RemoteIpAddress, "NetTcpClient");
+      ClientDisconnected?.Invoke(this, new DisconnectedEventArgs(this, netTcpErrorReason));
     }
     catch (Exception ex) {
-      ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, reason));
+      ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, netTcpErrorReason));
       Debug.WriteLine("Error disconnecting client: " + ex.Message, "NetTcpClient");
     }
   }
 
-  public void EnqueuePacketSend(IPacket message,
+  public override void EnqueuePacketSend(IPacket message,
                                 bool encrypted = false) {
     if (!PacketManager.GetOpcode(message, out var opcode)) {
       UnknownPacketSendAttempted?.Invoke(this, new UnknownPacketSendAttemptEventArgs(this, message, encrypted));
@@ -183,6 +183,6 @@ public class NetTcpClient : NetTcpConnectionBase
     Task.Run(HandleOutgoingPackets, CancellationTokenSource.Token);
     Task.Run(HandleIncomingPackets);
     Debug.WriteLine($"Connected to {RemoteIpAddress}:{RemotePort}", "NetTcpClient");
-    ClientConnected?.Invoke(this, new ClientConnectedEventArgs(this));
+    ClientConnected?.Invoke(this, new ConnectedEventArgs(this));
   }
 }

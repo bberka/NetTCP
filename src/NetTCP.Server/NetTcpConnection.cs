@@ -5,12 +5,12 @@ using System.Net.Sockets;
 using System.Text;
 using Autofac;
 using NetTCP.Abstract;
+using NetTCP.Events;
 using NetTCP.Network;
-using NetTCP.Server.Events;
 
 namespace NetTCP.Server;
 
-public sealed class NetTcpConnection : NetTcpConnectionBase
+public  class NetTcpConnection : NetTcpConnectionBase,INetTcpSession
 {
   private readonly NetTcpServer _server;
 
@@ -53,9 +53,9 @@ public sealed class NetTcpConnection : NetTcpConnectionBase
         _server.InvokePacketQueued(new PacketQueuedEventArgs(this, messageId, encrypted, PacketQueueType.Incoming));
       }
       catch (Exception ex) {
-        _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, ex, Reason.NetworkStreamReadError));
+        _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, ex, NetTcpErrorReason.NetworkStreamReadError));
         Debug.WriteLine($"Error reading network stream from {RemoteIpAddress}: {ex.Message}");
-        Disconnect(Reason.NetworkStreamReadError);
+        Disconnect(NetTcpErrorReason.NetworkStreamReadError);
       }
     }
   }
@@ -73,7 +73,7 @@ public sealed class NetTcpConnection : NetTcpConnectionBase
           BinaryWriter.Write(packet.Body);
         }
         catch (Exception ex) {
-          _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, ex, Reason.PacketSendQueueError));
+          _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, ex, NetTcpErrorReason.PacketSendQueueError));
           Debug.WriteLine($"Error sending packet to {RemoteIpAddress} with message id {packet.MessageId}: {ex.Message}");
         }
     }
@@ -111,20 +111,20 @@ public sealed class NetTcpConnection : NetTcpConnectionBase
   ///   However before it waits current handlers to send the responses
   ///   But it will stop accepting new request messages
   /// </summary>
-  /// <param name="reason"></param>
-  public override void Disconnect(Reason reason = Reason.Unknown) {
+  /// <param name="netTcpErrorReason"></param>
+  public override void Disconnect(NetTcpErrorReason netTcpErrorReason = NetTcpErrorReason.Unknown) {
     try {
-      base.ProcessDisconnect(reason);
-      _server.InvokeClientDisconnected(new ClientDisconnectedEventArgs(this, reason));
-      Debug.WriteLine($"Client disconnected: {RemoteIpAddress}");
+      base.ProcessDisconnect(netTcpErrorReason);
+      _server.InvokeClientDisconnected(new DisconnectedEventArgs(this, netTcpErrorReason));
+      Debug.WriteLine($"Session disconnected: {RemoteIpAddress}");
     }
     catch (Exception ex) {
-      _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, ex, reason));
+      _server.InvokeConnectionError(new ConnectionErrorEventArgs(this, ex, netTcpErrorReason));
       Debug.WriteLine($"Error disconnecting client: {ex.Message}");
     }
   }
 
-  public void EnqueuePacketSend(IPacket message,
+  public override void EnqueuePacketSend(IPacket message,
                                 bool encrypted = false) {
     if (!_server.PacketManager.GetOpcode(message, out var opcode)) {
       _server.InvokeUnknownPacketSendAttempt(new UnknownPacketSendAttemptEventArgs(this, message, encrypted));

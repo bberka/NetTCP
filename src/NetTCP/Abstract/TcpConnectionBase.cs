@@ -8,7 +8,8 @@ using NetTCP.Network;
 
 namespace NetTCP.Abstract;
 
-public abstract class NetTcpConnectionBase : IDisposable
+public abstract class NetTcpConnectionBase : IDisposable,
+                                             INetTcpSession
 
 {
   public NetTcpConnectionBase(Guid connectionId) {
@@ -134,8 +135,8 @@ public abstract class NetTcpConnectionBase : IDisposable
   /// <summary>
   ///  Closes client connection, waits for all incoming packets to be processed and disposes the connection and other resources.
   /// </summary>
-  /// <param name="reason"></param>
-  protected void ProcessDisconnect(Reason reason) {
+  /// <param name="netTcpErrorReason"></param>
+  protected void ProcessDisconnect(NetTcpErrorReason netTcpErrorReason) {
     lock (_disconnectLock) {
       Client.Close();
       var timer = new Stopwatch();
@@ -178,5 +179,6 @@ public abstract class NetTcpConnectionBase : IDisposable
   protected abstract void HandleOutgoingPackets();
   protected abstract void HandleIncomingPackets();
   protected abstract void HandleStream();
-  public abstract void Disconnect(Reason reason = Reason.Unknown);
+  public abstract void Disconnect(NetTcpErrorReason netTcpErrorReason = NetTcpErrorReason.Unknown);
+  public abstract void EnqueuePacketSend(IPacket message, bool encrypted = false);
 }
