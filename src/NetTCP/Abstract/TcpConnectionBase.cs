@@ -121,7 +121,7 @@ public abstract class NetTcpConnectionBase : IDisposable,
     if (encrypted) {
       var providerExists = Scope.TryResolve<INetTcpEncryptionProvider>(out var provider);
       if (!providerExists) {
-        throw new Exception("Encryption provider not found, packet impossible to send, please register an encryption provider in the service container. OpCode: " + opcode);
+        throw new Exception($"Encryption provider not found, packet impossible to send, please register an encryption provider in the service container. OpCode: {opcode}");
       }
 
       bytes = provider.Encrypt(bytes);

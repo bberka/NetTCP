@@ -21,7 +21,7 @@ public class ExampleClient
       typeof(OpCodes).Assembly
     });
 
-    Server.ServerStarted += (sender, args) => { Console.WriteLine("Server started on " + Server.IpAddress + ":" + Server.Port); };
+    Server.ServerStarted += (sender, args) => { Console.WriteLine($"Server started on {Server.IpAddress}:{Server.Port}"); };
     Server.ServerStopped += (sender, args) => { Console.WriteLine("Server stopped"); };
     Server.ServerError += (sender, args) => { Console.WriteLine($"Server error: {args.Exception}"); };
     Server.ClientConnected += (sender, args) => { Console.WriteLine($"New client connected: {args.Session.RemoteIpAddress}"); };

@@ -18,15 +18,15 @@ public class NetTcpClient : NetTcpConnectionBase,INetTcpSession
 
   public NetTcpClient(string remoteIp, ushort remotePort, IContainer serviceContainer, Assembly[]? packetAssemblies = null) : base() {
     if (string.IsNullOrEmpty(remoteIp)) {
-      throw new ArgumentException("Empty ip address: " + remoteIp, nameof(remoteIp));
+      throw new ArgumentException($"Empty ip address: {remoteIp}", nameof(remoteIp));
     }
 
     var parseIp = IPAddress.TryParse(remoteIp, out var ipAddress);
     if (parseIp == false)
-      throw new ArgumentException("Invalid ip address: " + remoteIp, nameof(remoteIp));
+      throw new ArgumentException($"Invalid ip address: {remoteIp}", nameof(remoteIp));
     var isValidPort = NetTcpTools.IsValidPort(remotePort);
     if (isValidPort == false)
-      throw new ArgumentException("Invalid port: " + remotePort, nameof(remotePort));
+      throw new ArgumentException($"Invalid port: {remotePort}", nameof(remotePort));
 
     if (serviceContainer is null) {
       throw new ArgumentNullException(nameof(serviceContainer));
@@ -61,7 +61,7 @@ public class NetTcpClient : NetTcpConnectionBase,INetTcpSession
   protected override void HandleStream() {
     while (CanRead) {
       try {
-        Debug.WriteLine("Waiting for data " + RemotePort, "NetTcpClient");
+        Debug.WriteLine($"Waiting for data {RemotePort}", "NetTcpClient");
         LastActivity = DateTime.Now.Ticks;
         var messageId = BinaryReader.ReadInt32();
         var encrypted = BinaryReader.ReadBoolean();
@@ -70,7 +70,7 @@ public class NetTcpClient : NetTcpConnectionBase,INetTcpSession
 
         var messageInstance = PacketManager.GetMessage(messageId);
         if (messageInstance == null) {
-          Debug.WriteLine("Unknown packet received: " + messageId, "NetTcpClient");
+          Debug.WriteLine($"Unknown packet received: {messageId}", "NetTcpClient");
           UnknownPacketReceived?.Invoke(this, new UnknownPacketReceivedEventArgs(this, messageId, encrypted, size, restBytes));
           return;
         }
@@ -89,12 +89,12 @@ public class NetTcpClient : NetTcpConnectionBase,INetTcpSession
 
         messageInstance.Read(new TcpPacketReader(restBytes));
         var clientPacket = new ProcessedIncomingPacket(messageId, encrypted, messageInstance);
-        Debug.WriteLine("Packet received: " + messageId, "NetTcpClient");
+        Debug.WriteLine($"Packet received: {messageId}", "NetTcpClient");
         IncomingPacketQueue.Enqueue(clientPacket);
         PacketQueued?.Invoke(this, new PacketQueuedEventArgs(this, messageId, encrypted, PacketQueueType.Incoming));
       }
       catch (Exception ex) {
-        Debug.WriteLine("Error reading network stream: " + ex.Message, "NetTcpClient");
+        Debug.WriteLine($"Error reading network stream: {ex.Message}", "NetTcpClient");
         ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, NetTcpErrorReason.NetworkStreamReadError));
       }
     }
@@ -152,12 +152,12 @@ public class NetTcpClient : NetTcpConnectionBase,INetTcpSession
   public override void Disconnect(NetTcpErrorReason netTcpErrorReason = NetTcpErrorReason.Unknown) {
     try {
       base.ProcessDisconnect(netTcpErrorReason);
-      Debug.WriteLine("Session disconnected: " + RemoteIpAddress, "NetTcpClient");
+      Debug.WriteLine($"Session disconnected: {RemoteIpAddress}", "NetTcpClient");
       ClientDisconnected?.Invoke(this, new DisconnectedEventArgs(this, netTcpErrorReason));
     }
     catch (Exception ex) {
       ConnectionError?.Invoke(this, new ConnectionErrorEventArgs(this, ex, netTcpErrorReason));
-      Debug.WriteLine("Error disconnecting client: " + ex.Message, "NetTcpClient");
+      Debug.WriteLine($"Error disconnecting client: {ex.Message}", "NetTcpClient");
     }
   }
 
@@ -165,13 +165,13 @@ public class NetTcpClient : NetTcpConnectionBase,INetTcpSession
                                 bool encrypted = false) {
     if (!PacketManager.GetOpcode(message, out var opcode)) {
       UnknownPacketSendAttempted?.Invoke(this, new UnknownPacketSendAttemptEventArgs(this, message, encrypted));
-      Debug.WriteLine("Unknown packet send attempted: " + message, "NetTcpClient");
+      Debug.WriteLine($"Unknown packet send attempted: {message}", "NetTcpClient");
       return;
     }
 
     base.ProcessOutgoingPacket(opcode, encrypted, message);
     PacketQueued?.Invoke(this, new PacketQueuedEventArgs(this, opcode, encrypted, PacketQueueType.Outgoing));
-    Debug.WriteLine("Packet queued: " + message, "NetTcpClient");
+    Debug.WriteLine($"Packet queued: {message}", "NetTcpClient");
   }
 
 

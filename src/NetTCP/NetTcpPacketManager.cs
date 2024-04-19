@@ -71,7 +71,7 @@ public sealed class NetTcpPacketManager<T> where T : INetTcpSession
       }
 
       MessageHandlers = messageHandlers.ToImmutableDictionary();
-      Debug.WriteLine("Message handlers registered successfully. Count: " + MessageHandlers.Count,nameof(NetTcpPacketManager<T>));
+      Debug.WriteLine($"Message handlers registered successfully. Count: {MessageHandlers.Count}",nameof(NetTcpPacketManager<T>));
     }
 
 
@@ -101,8 +101,8 @@ public sealed class NetTcpPacketManager<T> where T : INetTcpSession
 
         MessageFactories = messageFactories.ToImmutableDictionary();
         OpCodes = messageOpcodes.ToImmutableDictionary();
-        Debug.WriteLine("Message factories registered successfully. Count: " + MessageFactories.Count,nameof(NetTcpPacketManager<T>));
-        Debug.WriteLine("Message opcodes registered successfully. Count: " + OpCodes.Count,nameof(NetTcpPacketManager<T>));
+        Debug.WriteLine($"Message factories registered successfully. Count: {MessageFactories.Count}",nameof(NetTcpPacketManager<T>));
+        Debug.WriteLine($"Message opcodes registered successfully. Count: {OpCodes.Count}",nameof(NetTcpPacketManager<T>));
       }
     }
   }

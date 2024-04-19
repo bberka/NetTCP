@@ -46,15 +46,15 @@ public class NetTcpServer
 
   public NetTcpServer(string ip, ushort port, IContainer serviceContainer, Assembly[]? packetAssemblies = null) {
     if (string.IsNullOrEmpty(ip)) {
-      throw new ArgumentException("Empty ip address: " + ip, nameof(ip));
+      throw new ArgumentException($"Empty ip address: {ip}", nameof(ip));
     }
 
     var parseIp = IPAddress.TryParse(ip, out var ipAddress);
     if (parseIp == false)
-      throw new ArgumentException("Invalid ip address: " + ip, nameof(ip));
+      throw new ArgumentException($"Invalid ip address: {ip}", nameof(ip));
     var isValidPort = NetTcpTools.IsValidPort(port);
     if (isValidPort == false)
-      throw new ArgumentException("Invalid port: " + port, nameof(port));
+      throw new ArgumentException($"Invalid port: {port}", nameof(port));
 
     if (serviceContainer == null) {
       throw new ArgumentNullException(nameof(serviceContainer));
@@ -63,7 +63,7 @@ public class NetTcpServer
     PacketManager = new NetTcpPacketManager<NetTcpConnection>();
     packetAssemblies ??= Array.Empty<Assembly>();
     foreach (var assembly in packetAssemblies) {
-      Debug.WriteLine("Registering assembly: " + assembly.FullName, "NetTcpServer");
+      Debug.WriteLine($"Registering assembly: {assembly.FullName}", "NetTcpServer");
       PacketManager.Register(assembly);
     }
 
@@ -87,13 +87,13 @@ public class NetTcpServer
       while (Connections.TryTake(out var connection)) tempConnections.Add(connection);
       foreach (var tcpConnection in tempConnections) {
         if (tcpConnection.LastActivity + ConnectionTimeoutSeconds * 1000 < Environment.TickCount64) {
-          Debug.WriteLine("Session timeout: " + tcpConnection.RemoteIpAddress, "NetTcpServer");
+          Debug.WriteLine($"Session timeout: {tcpConnection.RemoteIpAddress}", "NetTcpServer");
           tcpConnection.Disconnect(NetTcpErrorReason.Timeout);
           continue;
         }
 
         if (!tcpConnection.CanRead) {
-          Debug.WriteLine("Session can not process: " + tcpConnection.RemoteIpAddress, "NetTcpServer");
+          Debug.WriteLine($"Session can not process: {tcpConnection.RemoteIpAddress}", "NetTcpServer");
           tcpConnection.Disconnect(NetTcpErrorReason.CanNotProcess);
           continue;
         }
@@ -111,25 +111,25 @@ public class NetTcpServer
     try {
       Listener.Start();
       ServerStarted?.Invoke(this, new ServerStartedEventArgs());
-      Debug.WriteLine("Server started on " + IpAddress + ":" + Port, "NetTcpServer");
+      Debug.WriteLine($"Server started on {IpAddress}:{Port}", "NetTcpServer");
     }
     catch (Exception ex) {
       ServerError?.Invoke(this, new ServerErrorEventArgs(ex));
-      Debug.WriteLine("Error starting server: " + ex.Message, "NetTcpServer");
+      Debug.WriteLine($"Error starting server: {ex.Message}", "NetTcpServer");
       throw;
     }
     await Task.Run(async () => {
                      while (ServerCancellationTokenSource?.IsCancellationRequested == false) {
                        try {
-                         Debug.WriteLine("Waiting for new connection", "NetTcpServer");
+                         Debug.WriteLine("Waiting for new connections", "NetTcpServer");
                          var client = await Listener.AcceptTcpClientAsync(ServerCancellationTokenSource.Token).ConfigureAwait(false);
                          var connection = new NetTcpConnection(client, this, ServerCancellationTokenSource.Token);
-                         Debug.WriteLine("New connection accepted: " + connection.RemoteIpAddress, "NetTcpServer");
+                         Debug.WriteLine($"New connection accepted: {connection.RemoteIpAddress}", "NetTcpServer");
                          Connections.Add(connection);
                          ClientConnected?.Invoke(this, new ConnectedEventArgs(connection));
                        }
                        catch (Exception ex) {
-                         Debug.WriteLine("Error accepting new connection: " + ex.Message, "NetTcpServer");
+                         Debug.WriteLine($"Error accepting new connection: {ex.Message}", "NetTcpServer");
                          ServerError?.Invoke(this, new ServerErrorEventArgs(ex));
                        }
                      }
@@ -137,12 +137,18 @@ public class NetTcpServer
                    ServerCancellationTokenSource.Token);
   }
 
-  public void StopServer(NetTcpErrorReason netTcpErrorReason) {
+  /// <summary>
+  /// Stops the server and disconnects all clients, with the specified reason. This will wait all processed incoming packet handlers to be called before stopping the server.
+  /// <br/><br/>
+  /// This will block the calling thread until all clients are disconnected.
+  /// </summary>
+  /// <param name="reason"></param>
+  public void StopServer(NetTcpErrorReason reason) {
     Debug.WriteLine("Stopping server", "NetTcpServer");
     Listener.Stop();
     var disconnectTasks = new List<Task>();
     foreach (var connection in Connections) {
-      disconnectTasks.Add(Task.Run(() => connection.Disconnect(netTcpErrorReason)));
+      disconnectTasks.Add(Task.Run(() => connection.Disconnect(reason)));
     }
     Task.WhenAll(disconnectTasks).GetAwaiter().GetResult();
     ServerCancellationTokenSource.Dispose();
@@ -151,9 +157,14 @@ public class NetTcpServer
     Debug.WriteLine("Server stopped", "NetTcpServer");
   }
 
+  /// <summary>
+  /// Sends packet to all connected clients
+  /// </summary>
+  /// <param name="message"></param>
+  /// <param name="encrypted"></param>
   public void EnqueueBroadcastPacket(IPacket message,
                                      bool encrypted = false) {
-    Debug.WriteLine("Broadcasting packet: " + message, "NetTcpServer");
+    Debug.WriteLine($"Broadcasting packet: {message}", "NetTcpServer");
     Parallel.ForEach(Connections,
                      connection => connection.EnqueuePacketSend(message, encrypted));
     // foreach (var connection in Connections)
