@@ -3,4 +3,5 @@
 public interface IServerInfoMgr
 {
   public string Name { get; set; }
+  string Version { get; set; }
 }

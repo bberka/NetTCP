@@ -2,6 +2,7 @@
 using NetTCP.Client;
 using NetTCP.Example.Shared;
 using NetTCP.Example.Shared.Network.Message.Client;
+using NetTCP.Example.Shared.Network.Message.Common;
 
 namespace NetTCP.Example.Client;
 
@@ -18,7 +19,10 @@ public class ExampleClient
       typeof(OpCodes).Assembly
     });
 
-    Client.ClientConnected += (sender, args) => { Console.WriteLine("Session connected "); };
+    Client.ClientConnected += (sender, args) => {
+      Console.WriteLine("Session connected ");
+      args.Session.EnqueuePacketSend(new VersionInformation());
+    };
     Client.ClientDisconnected += (sender, args) => { Console.WriteLine($"Session disconnected reason: {args.NetTcpErrorReason}"); };
     Client.PacketReceived += (sender, args) => { Console.WriteLine($"Received packet {args.MessageId}"); };
     Client.PacketQueued += (sender, args) => { Console.WriteLine($"Queued packet {args.OpCode}"); };

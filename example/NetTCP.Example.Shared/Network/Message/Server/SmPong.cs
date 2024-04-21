@@ -4,7 +4,7 @@ using NetTCP.Network;
 
 namespace NetTCP.Example.Shared.Network.Message.Server;
 
-[Packet(OpCodes.SMPong)]
+[Packet(OpCodes.SmPong,PacketType.Server)]
 public sealed class SmPong : IPacket
 {
   public long Ticks { get; set; }

@@ -2,6 +2,9 @@
 
 public enum OpCodes
 {
-  CMPing = 1000,
-  SMPong
+  CmPing = 1000,
+  SmPong,
+  SmVersionMismatch,
+  SmVersionVerified,
+  VersionInformation
 }

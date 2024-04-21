@@ -4,7 +4,7 @@ using NetTCP.Network;
 
 namespace NetTCP.Example.Shared.Network.Message.Client;
 
-[Packet(OpCodes.CMPing)]
+[Packet(OpCodes.CmPing,PacketType.Client)]
 public sealed class CmPing : IPacket
 {
   public long Ticks { get; set; } = DateTime.Now.Ticks;

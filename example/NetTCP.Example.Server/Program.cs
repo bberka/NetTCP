@@ -6,6 +6,6 @@ using NetTCP.Example.Server.Concrete;
 using NetTCP.Example.Shared;
 using NetTCP.Server;
 
-ExampleClient.This.StartAndWaitServer();
+ExampleServer.This.StartAndWaitServer();
 
 Console.WriteLine("Server app stopped");
