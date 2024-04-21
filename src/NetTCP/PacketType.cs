@@ -2,7 +2,7 @@
 
 public enum PacketType
 {
-  Message,
-  Command,
-  Event
+  Client,
+  Server,
+  ClientAndServer
 }

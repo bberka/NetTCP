@@ -60,7 +60,7 @@ public class NetTcpServer
       throw new ArgumentNullException(nameof(serviceContainer));
     }
 
-    PacketManager = new NetTcpPacketManager<NetTcpConnection>();
+    PacketManager = new NetTcpPacketManager<NetTcpConnection>(PacketManagerType.Server);
     packetAssemblies ??= Array.Empty<Assembly>();
     foreach (var assembly in packetAssemblies) {
       Debug.WriteLine($"Registering assembly: {assembly.FullName}", "NetTcpServer");

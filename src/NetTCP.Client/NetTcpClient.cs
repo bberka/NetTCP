@@ -36,7 +36,7 @@ public class NetTcpClient : NetTcpConnectionBase,INetTcpSession
     ServiceContainer = serviceContainer;
     CancellationTokenSource = new CancellationTokenSource();
     Client = new TcpClient();
-    PacketManager = new NetTcpPacketManager<NetTcpClient>();
+    PacketManager = new NetTcpPacketManager<NetTcpClient>(PacketManagerType.Client);
     packetAssemblies ??= Array.Empty<Assembly>();
     foreach (var assembly in packetAssemblies) {
       PacketManager.Register(assembly);

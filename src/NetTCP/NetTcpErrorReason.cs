@@ -18,5 +18,6 @@ public enum NetTcpErrorReason : byte
   ConnectionFailed,
   ClientDisposed,
   CanNotProcess,
-  EncryptionProviderNotFound
+  EncryptionProviderNotFound,
+  VersionMismatch
 }

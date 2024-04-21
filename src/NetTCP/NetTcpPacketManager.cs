@@ -11,6 +11,8 @@ namespace NetTCP;
 
 public sealed class NetTcpPacketManager<T> where T : INetTcpSession
 {
+  public PacketManagerType ManagerType { get; }
+
   public delegate void MessageHandlerDelegate(T connection, IPacket packet);
 
   protected internal delegate IPacket MessageFactoryDelegate();
@@ -26,6 +28,10 @@ public sealed class NetTcpPacketManager<T> where T : INetTcpSession
 
   private bool _isInitialized = false;
 
+  public NetTcpPacketManager(PacketManagerType managerType) {
+    ManagerType = managerType;
+  }
+
   /// <summary>
   ///   Register all message handlers and messages from an assembly
   ///   It will also get all types from the entry assembly
@@ -34,7 +40,7 @@ public sealed class NetTcpPacketManager<T> where T : INetTcpSession
   /// <param name="assembly"></param>
   public void Register(Assembly assembly) {
     Assemblies.Add(assembly);
-  }  
+  }
 
 
   /// <summary>
@@ -65,13 +71,15 @@ public sealed class NetTcpPacketManager<T> where T : INetTcpSession
           continue;
         }
 
-        if (messageHandlers.ContainsKey(messageId))
+        if (messageHandlers.ContainsKey(messageId)) {
+          throw new InvalidOperationException($"Duplicate message handler found. Please check your message handlers. MessageId: {messageId} TypeName: {type.FullName}");
           continue;
+        }
         messageHandlers.Add(messageId, handlerDelegate);
       }
 
       MessageHandlers = messageHandlers.ToImmutableDictionary();
-      Debug.WriteLine($"Message handlers registered successfully. Count: {MessageHandlers.Count}",nameof(NetTcpPacketManager<T>));
+      Debug.WriteLine($"Message handlers registered successfully. Count: {MessageHandlers.Count}", nameof(NetTcpPacketManager<T>));
     }
 
 
@@ -85,24 +93,56 @@ public sealed class NetTcpPacketManager<T> where T : INetTcpSession
           if (attribute == null)
             continue;
           var isPacket = type.GetInterface(nameof(IPacket)) != null;
-          if (isPacket) {
-            var handlerExists = MessageHandlers.ContainsKey(attribute.MessageId);
-            if (handlerExists) {
-              var @new = Expression.New(type.GetConstructor(Type.EmptyTypes));
-              var lambda = Expression.Lambda<MessageFactoryDelegate>(@new);
-              var factory = lambda.Compile();
-              messageFactories.Add(attribute.MessageId, factory);
-            }
-            else {
-              messageOpcodes.Add(type, attribute.MessageId);
-            }
+          if (!isPacket) {
+            continue;
           }
+
+          switch (ManagerType) {
+            case PacketManagerType.Client:
+              var canSendByClient = attribute.Type == PacketType.Client || attribute.Type == PacketType.ClientAndServer;
+              if (canSendByClient) {
+                messageOpcodes.Add(type, attribute.MessageId);
+              }
+
+              var canReceiveByClient = attribute.Type == PacketType.Server || attribute.Type == PacketType.ClientAndServer;
+              if (canReceiveByClient) {
+                var handlerExists = MessageHandlers.ContainsKey(attribute.MessageId);
+                if (handlerExists) {
+                  var @new = Expression.New(type.GetConstructor(Type.EmptyTypes));
+                  var lambda = Expression.Lambda<MessageFactoryDelegate>(@new);
+                  var factory = lambda.Compile();
+                  messageFactories.Add(attribute.MessageId, factory);
+                }
+              }
+              break;
+            case PacketManagerType.Server:
+              var canSendByServer = attribute.Type == PacketType.Server || attribute.Type == PacketType.ClientAndServer;
+              if (canSendByServer) {
+                messageOpcodes.Add(type, attribute.MessageId);
+              }
+              
+              var canReceiveByServer = attribute.Type == PacketType.Client || attribute.Type == PacketType.ClientAndServer;
+              if (canReceiveByServer) {
+                var handlerExists = MessageHandlers.ContainsKey(attribute.MessageId);
+                if (handlerExists) {
+                  var @new = Expression.New(type.GetConstructor(Type.EmptyTypes));
+                  var lambda = Expression.Lambda<MessageFactoryDelegate>(@new);
+                  var factory = lambda.Compile();
+                  messageFactories.Add(attribute.MessageId, factory);
+                }
+              }
+               
+              break;
+            default:
+              continue;
+          }
+
         }
 
         MessageFactories = messageFactories.ToImmutableDictionary();
         OpCodes = messageOpcodes.ToImmutableDictionary();
-        Debug.WriteLine($"Message factories registered successfully. Count: {MessageFactories.Count}",nameof(NetTcpPacketManager<T>));
-        Debug.WriteLine($"Message opcodes registered successfully. Count: {OpCodes.Count}",nameof(NetTcpPacketManager<T>));
+        Debug.WriteLine($"Message factories registered successfully. Count: {MessageFactories.Count}", nameof(NetTcpPacketManager<T>));
+        Debug.WriteLine($"Message opcodes registered successfully. Count: {OpCodes.Count}", nameof(NetTcpPacketManager<T>));
       }
     }
   }
